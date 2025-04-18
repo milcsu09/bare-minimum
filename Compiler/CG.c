@@ -1,9 +1,11 @@
 #include "CG.h"
 #include <llvm-c/Core.h>
 #include <llvm-c-14/llvm-c/Types.h>
+#include <llvm-c/Transforms/Scalar.h>
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 
 struct CG *
@@ -19,6 +21,20 @@ CG_Create ()
 
   cg->pass = LLVMCreateFunctionPassManagerForModule (cg->module);
   LLVMAddPromoteMemoryToRegisterPass (cg->pass);
+
+  LLVMAddInstructionCombiningPass(cg->pass);
+  LLVMAddReassociatePass(cg->pass);
+  LLVMAddGVNPass(cg->pass);
+  LLVMAddCFGSimplificationPass(cg->pass);
+  LLVMAddDeadStoreEliminationPass(cg->pass);
+
+  LLVMAddScalarReplAggregatesPass(cg->pass);
+  LLVMAddEarlyCSEPass(cg->pass);
+  LLVMAddTailCallEliminationPass(cg->pass);
+  LLVMAddLoopRotatePass(cg->pass);
+  LLVMAddLICMPass(cg->pass);
+  LLVMAddLoopUnrollPass(cg->pass);
+
   LLVMInitializeFunctionPassManager (cg->pass);
 
   cg->function = NULL;
@@ -70,7 +86,12 @@ CG_Generate_LValue(struct CG *cg, struct AST *ast, struct Scope *scope)
 
         struct Symbol *symbol = Scope_Find (scope, name);
 
-        assert (symbol);
+        if (!symbol)
+          {
+            Diagnostic (ast->location, D_ERROR,
+                        "cannot take address of that value");
+            Halt ();
+          }
 
         return symbol->value;
       }
@@ -120,6 +141,8 @@ LLVMValueRef CG_Generate_Call (struct CG *, struct AST *, struct Scope *);
 LLVMValueRef CG_Generate_I64 (struct CG *, struct AST *, struct Scope *);
 
 LLVMValueRef CG_Generate_F64 (struct CG *, struct AST *, struct Scope *);
+
+LLVMValueRef CG_Generate_String (struct CG *, struct AST *, struct Scope *);
 
 
 LLVMValueRef
@@ -236,6 +259,36 @@ CG_Generate_Variable (struct CG *cg, struct AST *ast, struct Scope *scope)
   Scope_Add (scope, Symbol_Create_Value (name, alloca));
 
   return alloca;
+}
+
+
+LLVMValueRef
+CG_Generate_If (struct CG *cg, struct AST *ast, struct Scope *scope)
+{
+  LLVMValueRef cond_value = CG_Generate (cg, ast->child, scope);
+  LLVMValueRef fn = cg->function;
+
+  LLVMBasicBlockRef then_block = LLVMAppendBasicBlock (fn, "if.then");
+  LLVMBasicBlockRef else_block = LLVMAppendBasicBlock (fn, "if.else");
+  LLVMBasicBlockRef merge_block = LLVMAppendBasicBlock (fn, "if.merge");
+
+  LLVMBuildCondBr (cg->builder, cond_value, then_block, else_block);
+
+  LLVMPositionBuilderAtEnd (cg->builder, then_block);
+  CG_Generate (cg, ast->child->next, scope);
+  LLVMBuildBr (cg->builder, merge_block);
+  then_block = LLVMGetInsertBlock (cg->builder);
+
+  LLVMPositionBuilderAtEnd (cg->builder, else_block);
+  if (ast->child->next->next)
+    CG_Generate (cg, ast->child->next->next, scope);
+  LLVMBuildBr (cg->builder, merge_block);
+  else_block = LLVMGetInsertBlock (cg->builder);
+
+  LLVMPositionBuilderAtEnd (cg->builder, merge_block);
+  merge_block = LLVMGetInsertBlock (cg->builder);
+
+  return NULL;
 }
 
 
@@ -554,18 +607,28 @@ CG_Generate_Call (struct CG *cg, struct AST *ast, struct Scope *scope)
 
   LLVMTypeRef type = LLVMGetElementType (LLVMTypeOf (function));
 
-  LLVMValueRef arguments[type_f.in_n];
+  struct AST *current;
 
-  struct AST *current = ast->child->next;
+  size_t n = 0;
 
-  for (size_t i = 0; i < type_f.in_n; ++i)
+  current = ast->child->next;
+  while (current)
+    n++, current = current->next;
+
+  current = ast->child->next;
+
+  LLVMValueRef arguments[n];
+
+  size_t i = 0;
+  while (i < n)
     {
       arguments[i] = CG_Generate (cg, current, scope);
       current = current->next;
+      i++;
     }
 
-  return LLVMBuildCall2 (cg->builder, type, function, arguments, type_f.in_n,
-                         "call");
+  return LLVMBuildCall2 (cg->builder, type, function, arguments, n,
+                         "");
 }
 
 
@@ -584,6 +647,15 @@ CG_Generate_F64 (struct CG *cg, struct AST *ast, struct Scope *scope)
                        ast->token.value.f64);
 }
 
+
+LLVMValueRef
+CG_Generate_String (struct CG *cg, struct AST *ast, struct Scope *scope)
+{
+  const char *string = ast->token.value.s;
+  LLVMValueRef str = LLVMBuildGlobalStringPtr(cg->builder, string, "str");
+  // LLVMValueRef globalStr = LLVMGetNamedGlobal(cg->module, "str");
+  return str;
+}
 
 LLVMValueRef
 CG_Generate (struct CG *cg, struct AST *ast, struct Scope *scope)
@@ -605,7 +677,7 @@ CG_Generate (struct CG *cg, struct AST *ast, struct Scope *scope)
     case AST_VARIABLE:
       return CG_Generate_Variable (cg, ast, scope);
     case AST_IF:
-      return NULL;
+      return CG_Generate_If (cg, ast, scope);
     case AST_WHILE:
       return CG_Generate_While (cg, ast, scope);
 
@@ -626,6 +698,8 @@ CG_Generate (struct CG *cg, struct AST *ast, struct Scope *scope)
       return CG_Generate_I64 (cg, ast, scope);
     case AST_F64:
       return CG_Generate_F64 (cg, ast, scope);
+    case AST_STRING:
+      return CG_Generate_String (cg, ast, scope);
     }
 }
 

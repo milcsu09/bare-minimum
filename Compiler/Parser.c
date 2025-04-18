@@ -97,12 +97,20 @@ Parser_Parse_Type (struct Parser *parser)
         struct Type **in;
         size_t in_capacity = 4;
         size_t in_n = 0;
+        int variadic = 0;
 
         in = calloc (in_capacity, sizeof (struct Type *));
 
         if (!Parser_Match (parser, TOKEN_RPAREN))
           while (1)
             {
+              if (Parser_Match (parser, TOKEN_3DOT))
+                {
+                  Parser_Advance (parser);
+                  variadic = 1;
+                  break;
+                }
+
               struct Type *argument;
 
               argument = Parser_Parse_Type (parser);
@@ -131,7 +139,7 @@ Parser_Parse_Type (struct Parser *parser)
 
         struct Type_Function function;
 
-        function = Type_Function_Create (in_n, in, out, 0);
+        function = Type_Function_Create (in_n, in, out, variadic);
 
         // Type_Function_Create allocates it's own array.
         free (in);
@@ -197,6 +205,8 @@ struct AST *Parser_Parse_Group_Expression (struct Parser *);
 struct AST *Parser_Parse_Compound_Expression (struct Parser *);
 
 struct AST *Parser_Parse_Number (struct Parser *);
+
+struct AST *Parser_Parse_String (struct Parser *);
 
 
 struct AST *
@@ -267,7 +277,7 @@ Parser_Parse_Function_Prototype (struct Parser *parser)
 
   struct AST *result;
 
-  int variadic = 0; // result->state
+  // int variadic = 0; // result->state
 
   result = AST_Create (name->location, AST_PROTOTYPE);
 
@@ -276,14 +286,14 @@ Parser_Parse_Function_Prototype (struct Parser *parser)
   if (!Parser_Match (parser, TOKEN_RPAREN))
     while (1)
       {
-        if (Parser_Match (parser, TOKEN_3DOT))
-          {
-            variadic = 1;
+        // if (Parser_Match (parser, TOKEN_3DOT))
+        //   {
+        //     variadic = 1;
 
-            Parser_Advance (parser);
+        //     Parser_Advance (parser);
 
-            break;
-          }
+        //     break;
+        //   }
 
         struct AST *argument;
 
@@ -311,7 +321,7 @@ Parser_Parse_Function_Prototype (struct Parser *parser)
   type = Parser_Parse_Type (parser);
 
   result->type = type;
-  result->state = variadic;
+  // result->state = variadic;
 
   return result;
 }
@@ -697,6 +707,8 @@ Parser_Parse_Atom_Expression (struct Parser *parser)
     case TOKEN_I64:
     case TOKEN_F64:
       return Parser_Parse_Number (parser);
+    case TOKEN_STRING:
+      return Parser_Parse_String (parser);
     default:
       {
         const char *b = Token_Kind_String (parser->current.kind);
@@ -806,6 +818,23 @@ Parser_Parse_Number (struct Parser *parser)
         Halt ();
       }
     }
+}
+
+
+struct AST *
+Parser_Parse_String (struct Parser *parser)
+{
+  Parser_Expect (parser, TOKEN_STRING);
+
+  struct AST *result;
+
+  result = AST_Create (parser->location, AST_STRING);
+
+  result->token = parser->current;
+
+  Parser_Advance (parser);
+
+  return result;
 }
 
 

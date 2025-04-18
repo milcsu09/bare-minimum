@@ -32,6 +32,8 @@ struct Type *Checker_Check_I64 (struct AST *);
 
 struct Type *Checker_Check_F64 (struct AST *);
 
+struct Type *Checker_Check_String (struct AST *);
+
 
 struct Type *
 Checker_Check_Program (struct AST *ast)
@@ -199,7 +201,14 @@ Checker_Check_Call (struct AST *ast)
 
   while (current)
     {
-      Checker_Check (current);
+      struct Type *type = Checker_Check (current);
+      if (type && type->kind == TYPE_VOID)
+        {
+          Diagnostic (current->location, D_ERROR,
+                      "expected non-void value as function parameter");
+          Halt ();
+        }
+
       current = current->next;
     }
 
@@ -216,6 +225,13 @@ Checker_Check_I64 (struct AST *ast)
 
 struct Type *
 Checker_Check_F64 (struct AST *ast)
+{
+  return ast->type;
+}
+
+
+struct Type *
+Checker_Check_String (struct AST *ast)
 {
   return ast->type;
 }
@@ -262,6 +278,8 @@ Checker_Check (struct AST *ast)
       return Checker_Check_I64 (ast);
     case AST_F64:
       return Checker_Check_F64 (ast);
+    case AST_STRING:
+      return Checker_Check_String (ast);
     }
 }
 

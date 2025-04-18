@@ -27,6 +27,7 @@ enum AST_Kind
   AST_CALL,
   AST_I64,
   AST_F64,
+  AST_STRING,
 };
 
 

@@ -1,0 +1,49 @@
+
+print(x) : (F64) -> Void;
+
+alias *U8 as String;
+alias *Void as FILE;
+
+fopen(a, b) : (String, String) -> FILE;
+fclose(a) : (FILE) -> Void;
+
+fseek(a, b, c) : (FILE, I64, I32) -> I32;
+ftell(a) : (FILE) -> U64;
+
+fread(a, b, c, d) : (String, U64, U64, FILE) -> U64;
+
+puts(x) : (String) -> Void;
+
+malloc(n) : (U64) -> *Void;
+free(p) : (*Void) -> Void;
+
+__main(argc, argv) : (I32, *String) -> Void =
+  {
+    "testing";
+
+    mode : String = malloc(2);
+    *(mode + 0) = 114;        # 'r'
+    *(mode + 1) = 0;          # '\0'
+
+    file := fopen(*(argv + 1), mode);
+
+    free(mode);
+
+    fseek(file, 0, 2);
+    length := ftell(file);
+    fseek(file, 0, 0);
+
+    buffer : String = malloc (length + 1);
+    fread(buffer, 1, length, file);
+
+    *(buffer + length) = 0;  # '\0'
+
+    fclose(file);
+
+    puts(buffer);
+
+    free(buffer);
+
+  };
+
+

@@ -1,29 +1,30 @@
 
-print(x) : (F64) -> Void;
+printf(fmt) : (*U8, ...) -> Void;
+scanf(fmt, x) : (*U8, *Void) -> Void;
 
-puts(x) : (*U8) -> Void;
+puts(s) : (*U8) -> Void;
 
-malloc(n) : (U64) -> *Void;
-free(p) : (*Void) -> Void;
+strlen(s) : (*U8) -> U64;
 
-__main() : () -> Void =
+
+my_strlen(s) : (*U8) -> U64 =
   {
-
-    p : *U8 = malloc(27);
-
     i := 0;
 
-    while i < 26 then
+    while *s > 0 then
       {
-        *(p + i) = 65 + i;
+        s = s + 1;
         i = i + 1;
       };
 
-    *(p + 26) = 0;
+    i
+  };
 
-    puts(p);
 
-    free(p);
+__main(argc, argv) : (I32, **U8) -> Void =
+  {
+
+    printf("%ld\n", my_strlen("Test"));
 
   };
 

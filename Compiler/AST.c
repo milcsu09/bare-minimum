@@ -24,6 +24,7 @@ static const char *const AST_KIND_STRING[] = {
   "CALL",
   "I64",
   "F64",
+  "STRING",
 };
 
 

@@ -19,6 +19,7 @@ enum Token_Kind
 
   TOKEN_I64,
   TOKEN_F64,
+  TOKEN_STRING,
 
   TOKEN_IDENTIFIER,
   TOKEN_TYPE,

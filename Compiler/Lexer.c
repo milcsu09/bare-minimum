@@ -236,10 +236,50 @@ Lexer_Lex_Identifier (struct Lexer *lexer)
 
 
 struct Token
+Lexer_Lex_String (struct Lexer *lexer)
+{
+  struct Location location = lexer->location;
+  const char *start = lexer->current;
+
+  Lexer_Advance (lexer);
+
+  while (strchr ("\"\n", *lexer->current) == NULL)
+    {
+      if (*lexer->current == '\\')
+        Lexer_Advance (lexer);
+      Lexer_Advance (lexer);
+    }
+
+  if (*lexer->current != '"')
+    {
+      Diagnostic (location, D_ERROR, "unterimated string-literal");
+      Halt ();
+    }
+
+  Lexer_Advance (lexer);
+
+  char *s = String_Copy_Until (start + 1, lexer->current - 1);
+
+  String_Escape (s);
+
+  return Token_Create_S (location, TOKEN_STRING, s);
+}
+
+
+struct Token
 Lexer_Next (struct Lexer *lexer)
 {
   while (isspace (*lexer->current))
     Lexer_Advance (lexer);
+
+  while (*lexer->current == '#')
+    {
+      while (*lexer->current && *lexer->current != '\n')
+        Lexer_Advance (lexer);
+
+      while (isspace (*lexer->current))
+        Lexer_Advance (lexer);
+    }
 
   char c = *lexer->current;
 
@@ -298,6 +338,9 @@ Lexer_Next (struct Lexer *lexer)
 
   if (isalpha (c) || c == '_')
     return Lexer_Lex_Identifier (lexer);
+
+  if (c == '"')
+    return Lexer_Lex_String (lexer);
 
   Diagnostic (lexer->location, D_ERROR, "unexpected character '%c'", c);
   Halt ();

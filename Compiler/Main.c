@@ -94,27 +94,42 @@ main (void)
 
   CG_Generate (cg, ast, cg_scope);
 
+  // ASDASD
+
   char *error = NULL;
+
+  char *triple = LLVMGetDefaultTargetTriple();
+
   LLVMTargetRef target;
-  char *triple = LLVMGetDefaultTargetTriple ();
-  if (LLVMGetTargetFromTriple (triple, &target, &error))
-    {
-      fprintf (stderr, "Error getting target: %s\n", error);
-      LLVMDisposeMessage (error);
-      return 1;
-    }
+  if (LLVMGetTargetFromTriple(triple, &target, &error) != 0) {
+      fprintf(stderr, "Error getting target: %s\n", error);
+      LLVMDisposeMessage(error);
+      exit(1);
+  }
 
   LLVMTargetMachineRef machine = LLVMCreateTargetMachine (
-      target, triple, "generic", "", LLVMCodeGenLevelDefault, LLVMRelocDefault,
+      target, triple, "", "", LLVMCodeGenLevelDefault, LLVMRelocPIC,
       LLVMCodeModelDefault);
 
   LLVMSetTarget (cg->module, triple);
 
-  LLVMCodeGenFileType fileType = LLVMObjectFile;
-  if (LLVMTargetMachineEmitToFile (machine, cg->module, "Tests/Main.o", fileType,
+  LLVMTargetDataRef data_layout = LLVMCreateTargetDataLayout(machine);
+  char *layout_str = LLVMCopyStringRepOfTargetData(data_layout);
+  LLVMSetDataLayout(cg->module, layout_str);
+  LLVMDisposeMessage(layout_str);
+
+  if (LLVMTargetMachineEmitToFile (machine, cg->module, "Tests/Main.o", LLVMObjectFile,
                                    &error))
     {
       fprintf (stderr, "Error emitting object file: %s\n", error);
+      LLVMDisposeMessage (error);
+      return 1;
+    }
+
+  if (LLVMTargetMachineEmitToFile (machine, cg->module, "Tests/Main.s", LLVMAssemblyFile,
+                                   &error))
+    {
+      fprintf (stderr, "Error emitting assembly file: %s\n", error);
       LLVMDisposeMessage (error);
       return 1;
     }
@@ -126,13 +141,78 @@ main (void)
       LLVMDisposeMessage (error);
     }
 
-  // printf ("IR file generated: Tests/Main.ll\n");
-  // printf ("Object file generated: Tests/Main.o\n");
 
   LLVMDisposeTargetMachine (machine);
   LLVMDisposeMessage (triple);
+ 
+  // ASDASD
 
-  // LLVMDumpModule (cg->module);
+  /*
+  char *error = NULL;
+  LLVMPrintModuleToFile (cg->module, "Tests/Main.ll", &error);
+
+ char *triple = LLVMGetDefaultTargetTriple();
+
+  LLVMTargetRef target;
+  if (LLVMGetTargetFromTriple(triple, &target, &error) != 0) {
+      fprintf(stderr, "Error getting target: %s\n", error);
+      LLVMDisposeMessage(error);
+      exit(1);
+  }
+
+  // Create target machine
+  LLVMTargetMachineRef target_machine = LLVMCreateTargetMachine(
+      target,
+      triple,
+      "",     // CPU
+      "",     // Features
+      LLVMCodeGenLevelDefault,
+      LLVMRelocPIC,
+      LLVMCodeModelDefault
+  );
+
+  // Set triple and datalayout on module
+  LLVMSetTarget(cg->module, triple);
+
+  LLVMTargetDataRef data_layout = LLVMCreateTargetDataLayout(target_machine);
+  char *layout_str = LLVMCopyStringRepOfTargetData(data_layout);
+  LLVMSetDataLayout(cg->module, layout_str);
+  LLVMDisposeMessage(layout_str);
+
+  // Verify module (optional but useful)
+  if (LLVMVerifyModule(cg->module, LLVMAbortProcessAction, &error) != 0) {
+      fprintf(stderr, "Module verification failed: %s\n", error);
+      LLVMDisposeMessage(error);
+      exit(1);
+  }
+
+  LLVMDisposeMessage(error);
+
+  // Emit object file
+  if (LLVMTargetMachineEmitToFile(
+          target_machine,
+          cg->module,
+          "Tests/Main.o",
+          LLVMObjectFile,
+          &error) != 0) {
+      fprintf(stderr, "Error emitting object file: %s\n", error);
+      LLVMDisposeMessage(error);
+      exit(1);
+  }
+
+  if (LLVMTargetMachineEmitToFile(
+        target_machine,
+          cg->module,
+          "Tests/Main.s",
+        LLVMAssemblyFile,
+        &error) != 0) {
+    fprintf(stderr, "Error emitting assembly file: %s\n", error);
+    LLVMDisposeMessage(error);
+    exit(1);
+  }
+
+  LLVMDumpModule (cg->module);
+  */
 
   CG_Destroy (cg);
 

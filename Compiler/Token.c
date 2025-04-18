@@ -9,6 +9,7 @@ static const char *const TOKEN_KIND_STRING[] = {
 
   "Whole Number",
   "Real Number",
+  "String",
 
   "Identifier",
   "Type",
@@ -108,6 +109,7 @@ Token_Copy (struct Token token)
 
   switch (token.kind)
     {
+    case TOKEN_STRING:
     case TOKEN_IDENTIFIER:
     case TOKEN_TYPE:
       copy.value.s = String_Copy (token.value.s);
@@ -125,6 +127,7 @@ Token_Destroy (struct Token token)
 {
   switch (token.kind)
     {
+    case TOKEN_STRING:
     case TOKEN_IDENTIFIER:
     case TOKEN_TYPE:
       free (token.value.s);
@@ -145,6 +148,9 @@ Token_Diagnostic (struct Token token)
       break;
     case TOKEN_F64:
       fprintf (stderr, "f64 '%g'", token.value.f64);
+      break;
+    case TOKEN_STRING:
+      fprintf (stderr, "string \"%s\"", token.value.s);
       break;
     case TOKEN_IDENTIFIER:
       fprintf (stderr, "identifier '%s'", token.value.s);

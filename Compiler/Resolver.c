@@ -3,7 +3,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-
 struct Type *
 Resolver_Resolve_Type (struct Type *type, struct Scope *scope)
 {
@@ -37,7 +36,7 @@ Resolver_Resolve_Type (struct Type *type, struct Scope *scope)
 
         struct Type *out = Resolver_Resolve_Type (function.out, scope);
 
-        struct Type_Function copy ;
+        struct Type_Function copy;
         copy = Type_Function_Create (function.in_n, in, out, function.variadic);
 
         free (in);
@@ -52,7 +51,6 @@ Resolver_Resolve_Type (struct Type *type, struct Scope *scope)
       assert (0);
     }
 }
-
 
 void Resolver_Resolve_Program (struct AST *, struct Scope *);
 
@@ -84,6 +82,7 @@ void Resolver_Resolve_I64 (struct AST *, struct Scope *);
 
 void Resolver_Resolve_F64 (struct AST *, struct Scope *);
 
+void Resolver_Resolve_String (struct AST *, struct Scope *);
 
 void
 Resolver_Resolve_Program (struct AST *ast, struct Scope *scope)
@@ -104,7 +103,6 @@ Resolver_Resolve_Program (struct AST *ast, struct Scope *scope)
 
   Scope_Destroy_Type (child);
 }
-
 
 void
 Resolver_Resolve_Prototype (struct AST *ast, struct Scope *scope)
@@ -158,7 +156,6 @@ Resolver_Resolve_Prototype (struct AST *ast, struct Scope *scope)
   else
     Scope_Add (scope, Symbol_Create_Type (name, ast->type));
 }
-
 
 void
 Resolver_Resolve_Function (struct AST *ast, struct Scope *scope)
@@ -216,7 +213,6 @@ Resolver_Resolve_Function (struct AST *ast, struct Scope *scope)
   Scope_Destroy_Type (child);
 }
 
-
 void
 Resolver_Resolve_Alias (struct AST *ast, struct Scope *scope)
 {
@@ -227,7 +223,6 @@ Resolver_Resolve_Alias (struct AST *ast, struct Scope *scope)
 
   Scope_Add (scope, Symbol_Create_Type (name, type));
 }
-
 
 void
 Resolver_Resolve_Variable (struct AST *ast, struct Scope *scope)
@@ -273,7 +268,6 @@ Resolver_Resolve_Variable (struct AST *ast, struct Scope *scope)
   Scope_Add (scope, Symbol_Create_Type (name, ast->type));
 }
 
-
 void
 Resolver_Resolve_If (struct AST *ast, struct Scope *scope)
 {
@@ -297,7 +291,6 @@ Resolver_Resolve_If (struct AST *ast, struct Scope *scope)
   ast->child->child->next = NULL;
 }
 
-
 void
 Resolver_Resolve_While (struct AST *ast, struct Scope *scope)
 {
@@ -317,7 +310,6 @@ Resolver_Resolve_While (struct AST *ast, struct Scope *scope)
   ast->child->next = ast->child->child->next;
   ast->child->child->next = NULL;
 }
-
 
 void
 Resolver_Resolve_Unary (struct AST *ast, struct Scope *scope)
@@ -346,7 +338,6 @@ Resolver_Resolve_Unary (struct AST *ast, struct Scope *scope)
 
   AST_Switch_Type (ast, type);
 }
-
 
 void
 Resolver_Resolve_Binary (struct AST *ast, struct Scope *scope)
@@ -389,14 +380,12 @@ Resolver_Resolve_Binary (struct AST *ast, struct Scope *scope)
     }
 }
 
-
 void
 Resolver_Resolve_Cast (struct AST *ast, struct Scope *scope)
 {
   AST_Switch_Type (ast, Resolver_Resolve_Type (ast->type, scope));
   Resolver_Resolve (ast->child, scope);
 }
-
 
 void
 Resolver_Resolve_Compound (struct AST *ast, struct Scope *scope)
@@ -431,7 +420,6 @@ Resolver_Resolve_Compound (struct AST *ast, struct Scope *scope)
   Scope_Destroy_Type (child);
 }
 
-
 void
 Resolver_Resolve_Identifier (struct AST *ast, struct Scope *scope)
 {
@@ -449,7 +437,6 @@ Resolver_Resolve_Identifier (struct AST *ast, struct Scope *scope)
 
   ast->type = Type_Copy (symbol->type);
 }
-
 
 void
 Resolver_Resolve_Call (struct AST *ast, struct Scope *scope)
@@ -471,25 +458,33 @@ Resolver_Resolve_Call (struct AST *ast, struct Scope *scope)
 
   size_t i = 0;
 
-  while (i < function.in_n)
+  while (current)
     {
-      if (!current)
-        break;
-
       struct AST *next = current->next;
-
-      struct Type *type = function.in[i];
 
       Resolver_Resolve (current, scope);
 
-      struct AST *cast;
+      struct AST *cast = NULL;
 
-      cast = AST_Create (current->location, AST_CAST);
+      if (i < function.in_n)
+        {
+          struct Type *type = function.in[i];
 
-      cast->type = Type_Copy (type);
-
-      cast->child = current;
-      cast->next = NULL;
+          cast = AST_Create (current->location, AST_CAST);
+          cast->type = Type_Copy (type);
+          cast->child = current;
+          cast->next = NULL;
+        }
+      else if (function.variadic)
+        {
+          cast = current;
+          cast->next = NULL;
+        }
+      else
+        {
+          Diagnostic (ast->location, D_ERROR, "too many arguments supplied");
+          Halt ();
+        }
 
       current->next = NULL;
 
@@ -503,15 +498,8 @@ Resolver_Resolve_Call (struct AST *ast, struct Scope *scope)
         }
 
       last_cast = cast;
-
       ++i;
       current = next;
-    }
-
-  if (current != NULL)
-    {
-      Diagnostic (ast->location, D_ERROR, "too many arguments supplied");
-      Halt ();
     }
 
   if (i < function.in_n)
@@ -525,14 +513,12 @@ Resolver_Resolve_Call (struct AST *ast, struct Scope *scope)
   ast->type = Type_Copy (function.out);
 }
 
-
 void
 Resolver_Resolve_I64 (struct AST *ast, struct Scope *scope)
 {
   (void)scope;
   ast->type = Type_Create (TYPE_I64);
 }
-
 
 void
 Resolver_Resolve_F64 (struct AST *ast, struct Scope *scope)
@@ -541,6 +527,12 @@ Resolver_Resolve_F64 (struct AST *ast, struct Scope *scope)
   ast->type = Type_Create (TYPE_F64);
 }
 
+void
+Resolver_Resolve_String (struct AST *ast, struct Scope *scope)
+{
+  (void)scope;
+  ast->type = Type_Create_Pointer (Type_Create (TYPE_U8));
+}
 
 void
 Resolver_Resolve (struct AST *ast, struct Scope *scope)
@@ -596,6 +588,9 @@ Resolver_Resolve (struct AST *ast, struct Scope *scope)
       break;
     case AST_F64:
       Resolver_Resolve_F64 (ast, scope);
+      break;
+    case AST_STRING:
+      Resolver_Resolve_String (ast, scope);
       break;
     }
 }
