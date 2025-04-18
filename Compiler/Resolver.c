@@ -358,7 +358,10 @@ Resolver_Resolve_Binary (struct AST *ast, struct Scope *scope)
 
   cast = AST_Create (ast->child->next->location, AST_CAST);
 
-  cast->type = Type_Copy (ast->child->type);
+  if (ast->child->type->kind == TYPE_POINTER)
+    cast->type = Type_Create (TYPE_I64);
+  else
+    cast->type = Type_Copy (ast->child->type);
 
   AST_Append (cast, ast->child->next);
 

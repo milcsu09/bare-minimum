@@ -602,7 +602,7 @@ Parser_Parse_Primary_Expression (struct Parser *parser)
 
   cast = AST_Create (call->location, AST_CAST);
 
-  cast->type = Parser_Parse_Type_Primary (parser);
+  cast->type = Parser_Parse_Type (parser);
 
   AST_Append (cast, call);
 

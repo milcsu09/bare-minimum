@@ -211,7 +211,7 @@ CG_Generate_Function (struct CG *cg, struct AST *ast, struct Scope *scope)
   else
     LLVMBuildRetVoid (cg->builder);
 
-  // LLVMRunFunctionPassManager (cg->pass, function);
+  LLVMRunFunctionPassManager (cg->pass, function);
 
   Scope_Destroy_Value (child);
   cg->function = NULL;
@@ -331,9 +331,35 @@ CG_Generate_Binary (struct CG *cg, struct AST *ast, struct Scope *scope)
   LLVMValueRef right = CG_Generate (cg, ast->child->next, scope);
 
   struct Type *t1 = ast->child->type;
+  struct Type *t2 = ast->child->next->type;
+
   enum Type_Kind k1 = t1->kind;
+  enum Type_Kind k2 = t2->kind;
 
   int signedness = Type_Kind_Is_Signed (k1);
+
+  if (k1 == TYPE_POINTER && Type_Kind_Is_Integer (k2))
+    {
+      switch (operator)
+        {
+        case TOKEN_PLUS:
+          {
+            LLVMValueRef indices[] = { right };
+
+            // Handle *Void as bytes.
+            LLVMTypeRef type =
+                t1->value.base->kind == TYPE_VOID
+                ? LLVMInt8Type()
+                : Type_As_LLVM (t1->value.base, cg->context);
+
+            return LLVMBuildGEP2 (cg->builder, type, left, indices, 1, "gep");
+          }
+        default:
+          Diagnostic (ast->child->location, D_ERROR, "unsupported operand");
+          Halt ();
+          break;
+        }
+    }
 
   if (Type_Kind_Is_Integer (k1))
     switch (operator)
@@ -446,6 +472,22 @@ CG_Generate_Cast (struct CG *cg, struct AST *ast, struct Scope *scope)
         return LLVMBuildFPExt (cg->builder, value, type, "fpext");
       else
         return LLVMBuildFPTrunc (cg->builder, value, type, "fptrunc");
+    }
+
+  if (k1 == TYPE_BOOL)
+    {
+      if (Type_Kind_Is_Integer (k2))
+        return LLVMBuildZExt (cg->builder, value, type, "zext");
+      if (Type_Kind_Is_Float (k2))
+        return LLVMBuildUIToFP (cg->builder, value, type, "booltof");
+    }
+
+  if (k2 == TYPE_BOOL)
+    {
+      if (Type_Kind_Is_Integer (k1))
+        return LLVMBuildICmp(cg->builder, LLVMIntNE, value, LLVMConstInt(Type_As_LLVM (t1, cg->context), 0, 0), "int_to_bool");
+      if (Type_Kind_Is_Float (k1))
+        return LLVMBuildFCmp(cg->builder, LLVMRealUNE, value, LLVMConstReal(Type_As_LLVM (t1, cg->context), 0.0), "fp_to_bool");
     }
 
   if (k1 == TYPE_POINTER && k2 == TYPE_POINTER)

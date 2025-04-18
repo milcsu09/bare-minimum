@@ -1,18 +1,29 @@
 
 print(x) : (F64) -> Void;
 
+puts(x) : (*U8) -> Void;
+
+malloc(n) : (U64) -> *Void;
+free(p) : (*Void) -> Void;
+
 __main() : () -> Void =
   {
 
-    a := 5;
+    p : *U8 = malloc(27);
 
-    b := &a;
+    i := 0;
 
-    *b = 12;
+    while i < 26 then
+      {
+        *(p + i) = 65 + i;
+        i = i + 1;
+      };
 
-    print(a);
-    print(b as I64);
-    print(*b);
+    *(p + 26) = 0;
+
+    puts(p);
+
+    free(p);
 
   };
 

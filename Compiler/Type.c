@@ -36,8 +36,9 @@ Type_Kind_Is_Integer (enum Type_Kind kind)
     case TYPE_U16:
     case TYPE_U32:
     case TYPE_U64:
-    case TYPE_BOOL:
       return 1;
+    // case TYPE_BOOL:
+    //   return 1;
     default:
       return 0;
     }

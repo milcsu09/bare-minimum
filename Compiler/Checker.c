@@ -160,7 +160,7 @@ Checker_Check_Cast (struct AST *ast)
 
   if (!Type_Castable (type, ast->type))
     {
-      Diagnostic (ast->child->location, D_ERROR, "cannnot cast '%s' to '%s'",
+      Diagnostic (ast->child->location, D_ERROR, "cannot cast '%s' to '%s'",
                   Type_Kind_String (type->kind),
                   Type_Kind_String (ast->type->kind));
       Halt ();

@@ -5,24 +5,37 @@ target triple = "x86_64-pc-linux-gnu"
 
 declare void @print(double)
 
+declare void @puts(i8*)
+
+declare void* @malloc(i64)
+
+declare void @free(void*)
+
 define void @__main() {
 entry:
-  %b = alloca i64*, align 8
-  %a = alloca i64, align 8
-  store i64 5, i64* %a, align 4
-  store i64* %a, i64** %b, align 8
-  %b1 = load i64*, i64** %b, align 8
-  store i64 12, i64* %b1, align 4
-  %a2 = load i64, i64* %a, align 4
-  %sitofp = sitofp i64 %a2 to double
-  %call = call void @print(double %sitofp)
-  %b3 = load i64*, i64** %b, align 8
-  %ptrtoint = ptrtoint i64* %b3 to i64
-  %sitofp4 = sitofp i64 %ptrtoint to double
-  %call5 = call void @print(double %sitofp4)
-  %b6 = load i64*, i64** %b, align 8
-  %deref = load i64, i64* %b6, align 4
-  %sitofp7 = sitofp i64 %deref to double
-  %call8 = call void @print(double %sitofp7)
+  %call = call void* @malloc(i64 27)
+  br label %while.cond
+
+while.cond:                                       ; preds = %while.body, %entry
+  %i.0 = phi i64 [ 0, %entry ], [ %2, %while.body ]
+  %ilt = icmp slt i64 %i.0, 26
+  br i1 %ilt, label %while.body, label %while.end
+
+while.body:                                       ; preds = %while.cond
+  %0 = bitcast void* %call to i8*
+  %gep = getelementptr i8, i8* %0, i64 %i.0
+  %1 = add i64 %i.0, 65
+  %lsr.chain = trunc i64 %1 to i8
+  store i8 %lsr.chain, i8* %gep, align 1
+  %2 = add i64 %1, -64
+  br label %while.cond
+
+while.end:                                        ; preds = %while.cond
+  %3 = bitcast void* %call to i8*
+  %gep8 = getelementptr i8, i8* %3, i64 26
+  store i8 0, i8* %gep8, align 1
+  %call10 = call void @puts(i8* %3)
+  %bitcast12 = bitcast i8* %3 to void*
+  %call13 = call void @free(void* %bitcast12)
   ret void
 }
