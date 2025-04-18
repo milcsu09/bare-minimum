@@ -1,0 +1,23 @@
+
+putd(a) : (F64) -> Void;
+
+main() : () -> Void =
+  {
+    a := 1;
+    b := 2;
+    c : I64;
+
+    i := 0;
+
+    while i < 10 then
+      {
+        c = a + b;
+        a = b;
+        b = c;
+
+        putd(c);
+
+        i = i + 1;
+      };
+  };
+
