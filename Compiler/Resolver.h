@@ -2,6 +2,7 @@
 #define RESOLVER_H
 
 #include "AST.h"
+#include "Scope.h"
 
 
 void Resolver_Resolve (struct AST *, struct Scope *);

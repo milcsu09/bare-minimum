@@ -1,9 +1,18 @@
+#include <llvm-c/Analysis.h>
+#include <llvm-c/BitWriter.h>
+#include <llvm-c/Core.h>
+#include <llvm-c/IRReader.h>
+#include <llvm-c/Target.h>
+#include <llvm-c/TargetMachine.h>
+
 #include "Parser.h"
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "Resolver.h"
+#include "CG.h"
 #include "Checker.h"
+#include "Resolver.h"
+#include "Scope.h"
 
 char *
 Read_File (const char *filename)
@@ -23,18 +32,22 @@ Read_File (const char *filename)
   return buffer;
 }
 
-
 void
 Main_Scope_Add_Type (struct Scope *scope, char *name, struct Type *type)
 {
-  Scope_Add (scope, Symbol_Create (name, type));
+  Scope_Add (scope, Symbol_Create_Type (name, type));
   Type_Destroy (type);
 }
-
 
 int
 main (void)
 {
+  LLVMInitializeAllTargetInfos ();
+  LLVMInitializeAllTargets ();
+  LLVMInitializeAllTargetMCs ();
+  LLVMInitializeAllAsmParsers ();
+  LLVMInitializeAllAsmPrinters ();
+
   const char *path = "Tests/Main.txt";
   char *source = Read_File (path);
 
@@ -44,9 +57,9 @@ main (void)
 
   struct AST *ast = Parser_Parse (&parser);
 
-  fprintf (stderr, "----------------\n");
-  AST_Diagnostic (ast);
-  fprintf (stderr, "----------------\n");
+  // fprintf (stderr, "----------------\n");
+  // AST_Diagnostic (ast);
+  // fprintf (stderr, "----------------\n");
 
   struct Scope *type_scope;
 
@@ -73,24 +86,62 @@ main (void)
 
   Checker_Check (ast);
 
+  struct CG *cg = CG_Create ();
 
-  Scope_Destroy (type_scope);
+  struct Scope *cg_scope;
+
+  cg_scope = Scope_Create (NULL);
+
+  CG_Generate (cg, ast, cg_scope);
+
+  char *error = NULL;
+  LLVMTargetRef target;
+  char *triple = LLVMGetDefaultTargetTriple ();
+  if (LLVMGetTargetFromTriple (triple, &target, &error))
+    {
+      fprintf (stderr, "Error getting target: %s\n", error);
+      LLVMDisposeMessage (error);
+      return 1;
+    }
+
+  LLVMTargetMachineRef machine = LLVMCreateTargetMachine (
+      target, triple, "generic", "", LLVMCodeGenLevelDefault, LLVMRelocDefault,
+      LLVMCodeModelDefault);
+
+  LLVMSetTarget (cg->module, triple);
+
+  LLVMCodeGenFileType fileType = LLVMObjectFile;
+  if (LLVMTargetMachineEmitToFile (machine, cg->module, "Tests/Main.o", fileType,
+                                   &error))
+    {
+      fprintf (stderr, "Error emitting object file: %s\n", error);
+      LLVMDisposeMessage (error);
+      return 1;
+    }
+
+  error = NULL;
+  if (LLVMPrintModuleToFile (cg->module, "Tests/Main.ll", &error))
+    {
+      fprintf (stderr, "Error writing IR file: %s\n", error);
+      LLVMDisposeMessage (error);
+    }
+
+  printf ("IR file generated: Tests/Main.ll\n");
+  printf ("Object file generated: Tests/Main.o\n");
+
+  LLVMDisposeTargetMachine (machine);
+  LLVMDisposeMessage (triple);
+
+  // LLVMDumpModule (cg->module);
+
+  CG_Destroy (cg);
+
+  Scope_Destroy_Value (cg_scope);
+  Scope_Destroy_Type (type_scope);
 
   AST_Destroy (ast);
 
   free (source);
-
-  /*
-  struct Lexer lexer = Lexer_Create ("42", "__anon");
-  struct Token token;
-
-  while ((token = Lexer_Next (&lexer)).kind != TOKEN_EOF)
-    {
-      Token_Debug_Print (token);
-      printf ("\n");
-      Token_Destroy (token);
-    }
-  */
 
   return 0;
 }

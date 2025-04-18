@@ -4,7 +4,7 @@
 
 struct Type *Checker_Check_Program (struct AST *);
 
-// struct Type *Checker_Check_Prototype (struct AST *);
+struct Type *Checker_Check_Prototype (struct AST *);
 
 struct Type *Checker_Check_Function (struct AST *);
 
@@ -45,12 +45,25 @@ Checker_Check_Program (struct AST *ast)
   return ast->type;
 }
 
+struct Type *
+Checker_Check_Prototype (struct AST *ast)
+{
+  if (ast->type->kind != TYPE_FUNCTION)
+    {
+      Diagnostic (ast->location, D_ERROR, "function cannot be of type '%s'",
+                  Type_Kind_String (ast->type->kind));
+      Diagnostic (ast->location, D_NOTE, "use the syntax '(T1, ...) -> T'");
+      Halt ();
+    }
+
+  return NULL;
+}
+
 
 struct Type *
 Checker_Check_Function (struct AST *ast)
 {
-  // No need to check prototype.
-
+  Checker_Check (ast->child);
   return Checker_Check (ast->child->next);
 }
 
@@ -191,8 +204,7 @@ Checker_Check (struct AST *ast)
       return Checker_Check_Program (ast);
 
     case AST_PROTOTYPE:
-      /* No need. */
-      return NULL;
+      return Checker_Check_Prototype (ast);
     case AST_FUNCTION:
       return Checker_Check_Function (ast);
 

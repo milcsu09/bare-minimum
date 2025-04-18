@@ -339,7 +339,10 @@ Parser_Parse_Statement (struct Parser *parser)
           result->type = Parser_Parse_Type_Primary (parser);
 
           if (!Parser_Match (parser, TOKEN_EQUALS))
-            return result;
+            {
+              Parser_Expect (parser, TOKEN_SEMICOLON);
+              return result;
+            }
 
           Parser_Expect_Advance (parser, TOKEN_EQUALS);
         }
@@ -352,6 +355,7 @@ Parser_Parse_Statement (struct Parser *parser)
 
       AST_Append (result, expression);
 
+      Parser_Expect (parser, TOKEN_SEMICOLON);
       return result;
     }
 

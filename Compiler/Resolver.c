@@ -97,7 +97,7 @@ Resolver_Resolve_Program (struct AST *ast, struct Scope *scope)
       current = current->next;
     }
 
-  Scope_Destroy (child);
+  Scope_Destroy_Type (child);
 }
 
 
@@ -106,11 +106,40 @@ Resolver_Resolve_Prototype (struct AST *ast, struct Scope *scope)
 {
   AST_Switch_Type (ast, Resolver_Resolve_Type (ast->type, scope));
 
+  // Don't do the type-checking here, just do a "soft" check.
+  if (ast->type->kind == TYPE_FUNCTION)
+    {
+      struct Type_Function function = ast->type->value.function;
+
+      struct AST *current = ast->child->next;
+
+      size_t i = 0;
+
+      while (i < function.in_n)
+        {
+          if (!current)
+            break;
+          ++i, current = current->next;
+        }
+
+      if (current != NULL)
+        {
+          Diagnostic (ast->location, D_ERROR,
+                      "too many arguments compared to function-prototype");
+          Halt ();
+        }
+
+      if (i < function.in_n)
+        {
+          Diagnostic (ast->location, D_ERROR,
+                      "not enough arguments compared to function-prototype");
+          Halt ();
+        }
+    }
+
   const char *name = ast->child->token.value.s;
 
-  struct Symbol *dup;
-
-  dup = Scope_Find (scope, name);
+  struct Symbol *dup = Scope_Find (scope, name);
 
   if (dup)
     {
@@ -122,7 +151,7 @@ Resolver_Resolve_Prototype (struct AST *ast, struct Scope *scope)
         }
     }
   else
-    Scope_Add (scope, Symbol_Create (name, ast->type));
+    Scope_Add (scope, Symbol_Create_Type (name, ast->type));
 }
 
 
@@ -145,7 +174,7 @@ Resolver_Resolve_Function (struct AST *ast, struct Scope *scope)
 
   size_t i = 0;
 
-  while (i < function.in_n)
+  while (current)
     {
       if (!current)
         break;
@@ -155,23 +184,9 @@ Resolver_Resolve_Function (struct AST *ast, struct Scope *scope)
       // Get prototype's arguments' type.
       struct Type *type = function.in[i];
 
-      Scope_Add (child, Symbol_Create (name, type));
+      Scope_Add (child, Symbol_Create_Type (name, type));
 
       ++i, current = current->next;
-    }
-
-  if (current != NULL)
-    {
-      Diagnostic (ast->location, D_ERROR,
-                  "too many arguments compared to function-type");
-      Halt ();
-    }
-
-  if (i < function.in_n)
-    {
-      Diagnostic (ast->location, D_ERROR,
-                  "not enough arguments compared to function-type");
-      Halt ();
     }
 
   // Resolve body.
@@ -193,7 +208,7 @@ Resolver_Resolve_Function (struct AST *ast, struct Scope *scope)
 
   ast->type = Type_Copy (ast->child->type);
 
-  Scope_Destroy (child);
+  Scope_Destroy_Type (child);
 }
 
 
@@ -205,7 +220,7 @@ Resolver_Resolve_Alias (struct AST *ast, struct Scope *scope)
 
   AST_Switch_Type (ast, type);
 
-  Scope_Add (scope, Symbol_Create (name, type));
+  Scope_Add (scope, Symbol_Create_Type (name, type));
 }
 
 
@@ -250,7 +265,7 @@ Resolver_Resolve_Variable (struct AST *ast, struct Scope *scope)
       Halt ();
     }
 
-  Scope_Add (scope, Symbol_Create (name, ast->type));
+  Scope_Add (scope, Symbol_Create_Type (name, ast->type));
 }
 
 
@@ -376,7 +391,7 @@ Resolver_Resolve_Compound (struct AST *ast, struct Scope *scope)
 
   ast->type = type;
 
-  Scope_Destroy (child);
+  Scope_Destroy_Type (child);
 }
 
 

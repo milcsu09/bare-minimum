@@ -1,23 +1,21 @@
+print(a) : (F64) -> Void;
 
-putd(a) : (F64) -> Void;
-
-main() : () -> Void =
+__main() : () -> Void =
   {
     a := 1;
-    b := 2;
+    b := 1;
+    i := 3;
+
     c : I64;
 
-    i := 0;
-
-    while i < 10 then
+    while i < 20 then
       {
         c = a + b;
         a = b;
         b = c;
 
-        putd(c);
+        print(c);
 
         i = i + 1;
       };
   };
-

@@ -1,108 +1,7 @@
 #include "Type.h"
-#include "String.h"
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-
-
-struct Symbol *
-Symbol_Create (const char *name, struct Type *type)
-{
-  struct Symbol *symbol;
-
-  symbol = calloc (1, sizeof (struct Symbol));
-
-  symbol->name = String_Copy (name);
-  symbol->type = Type_Copy (type);
-
-  return symbol;
-}
-
-
-void
-Symbol_Destroy (struct Symbol *symbol)
-{
-  Type_Destroy (symbol->type);
-  free (symbol->name);
-  free (symbol);
-}
-
-
-struct Scope *
-Scope_Create (struct Scope *parent)
-{
-  struct Scope *scope;
-
-  scope = calloc (1, sizeof (struct Scope));
-
-  scope->parent = parent;
-
-  scope->data_capacity = 4;
-  scope->data_n = 0;
-
-  scope->data = calloc (scope->data_capacity, sizeof (struct Symbol *));
-
-  return scope;
-}
-
-
-void
-Scope_Destroy (struct Scope *scope)
-{
-  Scope_Clear (scope);
-  free (scope->data);
-  free (scope);
-}
-
-
-void
-Scope_Clear (struct Scope *scope)
-{
-  for (size_t i = 0; i < scope->data_n; ++i)
-    Symbol_Destroy (scope->data[i]);
-  scope->data_n = 0;
-}
-
-
-void
-Scope_Add (struct Scope *scope, struct Symbol *symbol)
-{
-  if (scope->data_n >= scope->data_capacity)
-    {
-      scope->data_capacity *= 2;
-      scope->data = realloc (scope->data,
-                             scope->data_capacity * sizeof (struct Symbol *));
-    }
-
-  scope->data[scope->data_n++] = symbol;
-}
-
-
-struct Symbol *
-Scope_Find_Base (struct Scope *scope, const char *name, int parent)
-{
-  for (size_t i = 0; i < scope->data_n; ++i)
-    if (strcmp (scope->data[i]->name, name) == 0)
-      return scope->data[i];
-
-  if (scope->parent && parent)
-    return Scope_Find_Base (scope->parent, name, parent);
-
-  return NULL;
-}
-
-
-struct Symbol *
-Scope_Find (struct Scope *scope, const char *name)
-{
-  return Scope_Find_Base (scope, name, 1);
-}
-
-struct Symbol *
-Scope_Find_Shallow (struct Scope *scope, const char *name)
-{
-  return Scope_Find_Base (scope, name, 0);
-}
 
 
 static const char *const TYPE_KIND_STRING[] = {
@@ -121,6 +20,83 @@ static const char *const TYPE_KIND_STRING[] = {
   "Bool",
   "Function"
 };
+
+
+int
+Type_Kind_Is_Integer (enum Type_Kind kind)
+{
+  switch (kind)
+    {
+    case TYPE_I8:
+    case TYPE_I16:
+    case TYPE_I32:
+    case TYPE_I64:
+    case TYPE_U8:
+    case TYPE_U16:
+    case TYPE_U32:
+    case TYPE_U64:
+    case TYPE_BOOL:
+      return 1;
+    default:
+      return 0;
+    }
+}
+
+int
+Type_Kind_Is_Float (enum Type_Kind kind)
+{
+  switch (kind)
+    {
+    case TYPE_F32:
+    case TYPE_F64:
+      return 1;
+    default:
+      return 0;
+    }
+}
+
+int
+Type_Kind_Is_Signed (enum Type_Kind kind)
+{
+  switch (kind)
+    {
+    case TYPE_I8:
+    case TYPE_I16:
+    case TYPE_I32:
+    case TYPE_I64:
+      return 1;
+    default:
+      return 0;
+    }
+}
+
+int
+Type_Kind_Width (enum Type_Kind kind)
+{
+  switch (kind)
+    {
+    case TYPE_I8:
+    case TYPE_U8:
+      return 8;
+    case TYPE_I16:
+    case TYPE_U16:
+      return 16;
+    case TYPE_I32:
+    case TYPE_U32:
+      return 32;
+    case TYPE_I64:
+    case TYPE_U64:
+      return 64;
+    case TYPE_F32:
+      return 32;
+    case TYPE_F64:
+      return 64;
+    case TYPE_BOOL:
+      return 1;
+    default:
+      return 0;
+    }
+}
 
 
 const char *
@@ -195,6 +171,20 @@ Type_Function_Match (struct Type_Function f1, struct Type_Function f2)
     return 0;
 
   return 1;
+}
+
+
+LLVMTypeRef
+Type_Function_As_LLVM (struct Type_Function function, LLVMContextRef context)
+{
+  LLVMTypeRef in[function.in_n];
+
+  for (size_t i = 0; i < function.in_n; ++i)
+    in[i] = Type_As_LLVM (function.in[i], context);
+
+  LLVMTypeRef out = Type_As_LLVM (function.out, context);
+
+  return LLVMFunctionType (out, in, function.in_n, function.variadic);
 }
 
 
@@ -372,6 +362,43 @@ Type_Castable (struct Type *t1, struct Type *t2)
   int is_2_primitive = t2->kind >= TYPE_I8 && t2->kind <= TYPE_BOOL;
 
   return is_1_primitive && is_2_primitive;
+}
+
+
+LLVMTypeRef
+Type_As_LLVM (struct Type *type, LLVMContextRef context)
+{
+  switch (type->kind)
+    {
+    case TYPE_VOID:
+      return LLVMVoidTypeInContext (context);
+    case TYPE_I8:
+      return LLVMInt8TypeInContext (context);
+    case TYPE_I16:
+      return LLVMInt16TypeInContext (context);
+    case TYPE_I32:
+      return LLVMInt32TypeInContext (context);
+    case TYPE_I64:
+      return LLVMInt64TypeInContext (context);
+    case TYPE_U8:
+      return LLVMInt8TypeInContext (context);
+    case TYPE_U16:
+      return LLVMInt16TypeInContext (context);
+    case TYPE_U32:
+      return LLVMInt32TypeInContext (context);
+    case TYPE_U64:
+      return LLVMInt64TypeInContext (context);
+    case TYPE_F32:
+      return LLVMFloatTypeInContext (context);
+    case TYPE_F64:
+      return LLVMDoubleTypeInContext (context);
+    case TYPE_BOOL:
+      return LLVMInt1TypeInContext (context);
+    case TYPE_FUNCTION:
+      return Type_Function_As_LLVM (type->value.function, context);
+    default:
+      assert (0);
+    }
 }
 
 

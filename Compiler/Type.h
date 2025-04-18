@@ -3,40 +3,7 @@
 
 #include "Token.h"
 #include <stddef.h>
-
-
-struct Symbol
-{
-  char *name;
-  struct Type *type;
-};
-
-
-struct Symbol *Symbol_Create (const char *, struct Type *);
-
-void Symbol_Destroy (struct Symbol *);
-
-
-struct Scope
-{
-  struct Scope *parent;
-  size_t data_capacity;
-  size_t data_n;
-  struct Symbol **data;
-};
-
-
-struct Scope *Scope_Create (struct Scope *);
-
-void Scope_Destroy (struct Scope *);
-
-void Scope_Clear (struct Scope *);
-
-void Scope_Add (struct Scope *, struct Symbol *);
-
-struct Symbol *Scope_Find (struct Scope *, const char *);
-
-struct Symbol *Scope_Find_Shallow (struct Scope *, const char *);
+#include <llvm-c/Core.h>
 
 
 enum Type_Kind
@@ -59,6 +26,14 @@ enum Type_Kind
 };
 
 
+int Type_Kind_Is_Integer (enum Type_Kind);
+
+int Type_Kind_Is_Float (enum Type_Kind);
+
+int Type_Kind_Is_Signed (enum Type_Kind);
+
+int Type_Kind_Width (enum Type_Kind);
+
 const char *Type_Kind_String (enum Type_Kind);
 
 
@@ -79,6 +54,8 @@ struct Type_Function Type_Function_Copy (struct Type_Function);
 void Type_Function_Destroy (struct Type_Function);
 
 int Type_Function_Match (struct Type_Function, struct Type_Function);
+
+LLVMTypeRef Type_Function_As_LLVM (struct Type_Function, LLVMContextRef);
 
 void Type_Function_Diagnostic (struct Type_Function);
 
@@ -110,6 +87,8 @@ void Type_Destroy (struct Type *);
 int Type_Match (struct Type *, struct Type *);
 
 int Type_Castable (struct Type *, struct Type *);
+
+LLVMTypeRef Type_As_LLVM (struct Type *, LLVMContextRef);
 
 void Type_Diagnostic (struct Type *);
 
