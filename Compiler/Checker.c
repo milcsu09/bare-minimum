@@ -16,6 +16,8 @@ struct Type *Checker_Check_If (struct AST *);
 
 struct Type *Checker_Check_While (struct AST *);
 
+struct Type *Checker_Check_Unary (struct AST *);
+
 struct Type *Checker_Check_Binary (struct AST *);
 
 struct Type *Checker_Check_Cast (struct AST *);
@@ -92,16 +94,9 @@ struct Type *
 Checker_Check_If (struct AST *ast)
 {
   Checker_Check (ast->child);
-
-  if (Checker_Check (ast->child->next)->kind != TYPE_VOID)
-    Diagnostic (ast->child->next->location, D_WARNING,
-                "expression evaluates to non-void value");
-
+  Checker_Check (ast->child->next);
   if (ast->child->next->next)
-    if (Checker_Check (ast->child->next->next)->kind != TYPE_VOID)
-      Diagnostic (ast->child->next->next->location, D_WARNING,
-                  "expression evaluates to non-void value");
-
+    Checker_Check (ast->child->next->next);
   return NULL;
 }
 
@@ -110,16 +105,47 @@ struct Type *
 Checker_Check_While (struct AST *ast)
 {
   Checker_Check (ast->child);
-  if (Checker_Check (ast->child->next)->kind != TYPE_VOID)
-    Diagnostic (ast->child->next->location, D_WARNING,
-                "expression evaluates to non-void value");
+  Checker_Check (ast->child->next);
   return NULL;
 }
 
+struct Type *
+Checker_Check_Unary (struct AST *ast)
+{
+  switch (ast->token.kind)
+    {
+    case TOKEN_AMPERSAND:
+      if (!AST_Is_LV (ast->child))
+        {
+          Diagnostic (ast->child->location, D_ERROR,
+                      "cannot take address of right-value");
+          Halt ();
+        }
+      break;
+    default:
+      break;
+    }
+
+  return ast->type;
+}
 
 struct Type *
 Checker_Check_Binary (struct AST *ast)
 {
+  switch (ast->token.kind)
+    {
+    case TOKEN_EQUALS:
+      if (!AST_Is_LV (ast->child))
+        {
+          Diagnostic (ast->child->location, D_ERROR,
+                      "cannot assign right-value to right-value");
+          Halt ();
+        }
+      break;
+    default:
+      break;
+    }
+
   Checker_Check (ast->child);
   Checker_Check (ast->child->next);
 
@@ -140,7 +166,7 @@ Checker_Check_Cast (struct AST *ast)
       Halt ();
     }
 
-  return type;
+  return ast->type;
 }
 
 
@@ -219,6 +245,8 @@ Checker_Check (struct AST *ast)
     case AST_WHILE:
       return Checker_Check_While (ast);
 
+    case AST_UNARY:
+      return Checker_Check_Unary (ast);
     case AST_BINARY:
       return Checker_Check_Binary (ast);
     case AST_CAST:

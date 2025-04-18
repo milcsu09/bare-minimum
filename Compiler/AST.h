@@ -18,6 +18,7 @@ enum AST_Kind
   AST_IF,
   AST_WHILE,
 
+  AST_UNARY,
   AST_BINARY,
   AST_CAST,
 
@@ -30,6 +31,7 @@ enum AST_Kind
 
 
 const char *AST_Kind_String (enum AST_Kind);
+
 
 struct AST
 {
@@ -53,6 +55,8 @@ void AST_Attach (struct AST *, struct AST *);
 void AST_Append (struct AST *, struct AST *);
 
 void AST_Switch_Type (struct AST *, struct Type *);
+
+int AST_Is_LV (struct AST *);
 
 void AST_Diagnostic (struct AST *);
 

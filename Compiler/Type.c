@@ -18,7 +18,8 @@ static const char *const TYPE_KIND_STRING[] = {
   "F32",
   "F64",
   "Bool",
-  "Function"
+  "Function",
+  "Pointer",
 };
 
 
@@ -250,6 +251,19 @@ Type_Create_Function (struct Type_Function function)
 
 
 struct Type *
+Type_Create_Pointer (struct Type *base)
+{
+  struct Type *type;
+
+  type = Type_Create (TYPE_POINTER);
+
+  type->value.base = base;
+
+  return type;
+}
+
+
+struct Type *
 Type_Copy (struct Type *type)
 {
   struct Type *copy;
@@ -280,6 +294,9 @@ Type_Copy (struct Type *type)
     case TYPE_FUNCTION:
       copy->value.function = Type_Function_Copy (type->value.function);
       break;
+    case TYPE_POINTER:
+      copy->value.base = Type_Copy (type->value.base);
+      break;
     }
 
   return copy;
@@ -297,6 +314,9 @@ Type_Destroy (struct Type *type)
     case TYPE_FUNCTION:
       Type_Function_Destroy (type->value.function);
       break;
+    case TYPE_POINTER:
+      Type_Destroy (type->value.base);
+      break;
     default:
       break;
     }
@@ -306,7 +326,7 @@ Type_Destroy (struct Type *type)
 
 
 int
-Type_Match (struct Type *t1, struct Type * t2)
+Type_Match (struct Type *t1, struct Type *t2)
 {
   if (t1->kind != t2->kind)
     return 0;
@@ -329,6 +349,8 @@ Type_Match (struct Type *t1, struct Type * t2)
       return 1;
     case TYPE_FUNCTION:
       return Type_Function_Match (t1->value.function, t2->value.function);
+    case TYPE_POINTER:
+      return Type_Match (t1->value.base, t2->value.base);
     }
 }
 
@@ -337,6 +359,12 @@ int
 Type_Castable (struct Type *t1, struct Type *t2)
 {
   if (t1->kind == TYPE_VOID || t2->kind == TYPE_VOID)
+    return t1->kind == t2->kind;
+
+  if (t1->kind == TYPE_POINTER && Type_Kind_Is_Integer (t2->kind))
+    return 1;
+
+  if (t1->kind == TYPE_POINTER || t2->kind == TYPE_POINTER)
     return t1->kind == t2->kind;
 
   if (t1->kind == TYPE_FUNCTION || t2->kind == TYPE_FUNCTION)
@@ -396,6 +424,8 @@ Type_As_LLVM (struct Type *type, LLVMContextRef context)
       return LLVMInt1TypeInContext (context);
     case TYPE_FUNCTION:
       return Type_Function_As_LLVM (type->value.function, context);
+    case TYPE_POINTER:
+      return LLVMPointerType (Type_As_LLVM (type->value.base, context), 0);
     default:
       assert (0);
     }
@@ -413,6 +443,10 @@ Type_Diagnostic (struct Type *type)
       break;
     case TYPE_FUNCTION:
       Type_Function_Diagnostic (type->value.function);
+      break;
+    case TYPE_POINTER:
+      fprintf (stderr, "*");
+      Type_Diagnostic (type->value.base);
       break;
     default:
       fprintf (stderr, "%s", Type_Kind_String (type->kind));

@@ -22,7 +22,8 @@ enum Type_Kind
   TYPE_F32,
   TYPE_F64,
   TYPE_BOOL,
-  TYPE_FUNCTION
+  TYPE_FUNCTION,
+  TYPE_POINTER,
 };
 
 
@@ -63,6 +64,7 @@ void Type_Function_Diagnostic (struct Type_Function);
 union Type_Value
 {
   struct Token dummy;
+  struct Type *base;
   struct Type_Function function;
 };
 
@@ -79,6 +81,8 @@ struct Type *Type_Create (enum Type_Kind);
 struct Type *Type_Create_Dummy (struct Token);
 
 struct Type *Type_Create_Function (struct Type_Function);
+
+struct Type *Type_Create_Pointer (struct Type *);
 
 struct Type *Type_Copy (struct Type *);
 

@@ -1,21 +1,18 @@
-print(a) : (F64) -> Void;
+
+print(x) : (F64) -> Void;
 
 __main() : () -> Void =
   {
-    a := 1;
-    b := 1;
-    i := 3;
 
-    c : I64;
+    a := 5;
 
-    while i < 20 then
-      {
-        c = a + b;
-        a = b;
-        b = c;
+    b := &a;
 
-        print(c);
+    *b = 12;
 
-        i = i + 1;
-      };
+    print(a);
+    print(b as I64);
+    print(*b);
+
   };
+

@@ -44,6 +44,9 @@ Resolver_Resolve_Type (struct Type *type, struct Scope *scope)
 
         return Type_Create_Function (copy);
       }
+    case TYPE_POINTER:
+      return Type_Create_Pointer (
+          Resolver_Resolve_Type (type->value.base, scope));
     default:
       // Should be unreachable.
       assert (0);
@@ -64,6 +67,8 @@ void Resolver_Resolve_Variable (struct AST *, struct Scope *);
 void Resolver_Resolve_If (struct AST *, struct Scope *);
 
 void Resolver_Resolve_While (struct AST *, struct Scope *);
+
+void Resolver_Resolve_Unary (struct AST *, struct Scope *);
 
 void Resolver_Resolve_Binary (struct AST *, struct Scope *);
 
@@ -315,6 +320,35 @@ Resolver_Resolve_While (struct AST *ast, struct Scope *scope)
 
 
 void
+Resolver_Resolve_Unary (struct AST *ast, struct Scope *scope)
+{
+  Resolver_Resolve (ast->child, scope);
+
+  struct Type *type = NULL;
+
+  switch (ast->token.kind)
+    {
+    case TOKEN_AMPERSAND:
+      type = Type_Create_Pointer (Type_Copy (ast->child->type));
+      break;
+    case TOKEN_STAR:
+      if (ast->child->type->kind != TYPE_POINTER)
+        {
+          Diagnostic (ast->location, D_ERROR, "cannot dereference right-value");
+          Halt ();
+        }
+      type = Type_Copy (ast->child->type->value.base);
+      break;
+    default:
+      type = Type_Copy (ast->child->type);
+      break;
+    }
+
+  AST_Switch_Type (ast, type);
+}
+
+
+void
 Resolver_Resolve_Binary (struct AST *ast, struct Scope *scope)
 {
   Resolver_Resolve (ast->child, scope);
@@ -535,6 +569,9 @@ Resolver_Resolve (struct AST *ast, struct Scope *scope)
       Resolver_Resolve_While (ast, scope);
       break;
 
+    case AST_UNARY:
+      Resolver_Resolve_Unary (ast, scope);
+      break;
     case AST_BINARY:
       Resolver_Resolve_Binary (ast, scope);
       break;

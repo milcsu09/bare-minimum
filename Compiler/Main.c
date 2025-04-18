@@ -80,9 +80,9 @@ main (void)
 
   Resolver_Resolve (ast, type_scope);
 
-  fprintf (stderr, "----------------\n");
-  AST_Diagnostic (ast);
-  fprintf (stderr, "----------------\n");
+  // fprintf (stderr, "----------------\n");
+  // AST_Diagnostic (ast);
+  // fprintf (stderr, "----------------\n");
 
   Checker_Check (ast);
 
@@ -126,8 +126,8 @@ main (void)
       LLVMDisposeMessage (error);
     }
 
-  printf ("IR file generated: Tests/Main.ll\n");
-  printf ("Object file generated: Tests/Main.o\n");
+  // printf ("IR file generated: Tests/Main.ll\n");
+  // printf ("Object file generated: Tests/Main.o\n");
 
   LLVMDisposeTargetMachine (machine);
   LLVMDisposeMessage (triple);

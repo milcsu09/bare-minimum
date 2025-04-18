@@ -15,6 +15,7 @@ static const char *const AST_KIND_STRING[] = {
   "IF",
   "WHILE",
 
+  "UNARY",
   "BINARY",
   "CAST",
 
@@ -89,6 +90,36 @@ AST_Append (struct AST *root, struct AST *node)
     AST_Attach (root->child, node);
 }
 
+void
+AST_Switch_Type (struct AST *ast, struct Type *type)
+{
+  if (ast->type)
+    Type_Destroy (ast->type);
+
+  ast->type = type;
+}
+
+
+int
+AST_Is_LV (struct AST *ast)
+{
+  switch (ast->kind)
+    {
+    case AST_IDENTIFIER:
+      return 1;
+    case AST_UNARY:
+      switch (ast->token.kind)
+        {
+        case TOKEN_STAR:
+          return 1;
+        default:
+          return 0;
+        }
+    default:
+      return 0;
+    }
+}
+
 
 void
 AST_Diagnostic_Base (struct AST *root, size_t depth)
@@ -124,16 +155,6 @@ AST_Diagnostic_Base (struct AST *root, size_t depth)
 
   if (root->next)
     AST_Diagnostic_Base (root->next, depth);
-}
-
-
-void
-AST_Switch_Type (struct AST *ast, struct Type *type)
-{
-  if (ast->type)
-    Type_Destroy (ast->type);
-
-  ast->type = type;
 }
 
 

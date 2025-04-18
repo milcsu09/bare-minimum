@@ -7,22 +7,22 @@ declare void @print(double)
 
 define void @__main() {
 entry:
-  br label %while.cond
-
-while.cond:                                       ; preds = %while.body, %entry
-  %b.0 = phi i64 [ 1, %entry ], [ %add, %while.body ]
-  %i.0 = phi i64 [ 3, %entry ], [ %add8, %while.body ]
-  %a.0 = phi i64 [ 1, %entry ], [ %b.0, %while.body ]
-  %ilt = icmp slt i64 %i.0, 20
-  br i1 %ilt, label %while.body, label %while.end
-
-while.body:                                       ; preds = %while.cond
-  %add = add i64 %a.0, %b.0
-  %sitofp = sitofp i64 %add to double
+  %b = alloca i64*, align 8
+  %a = alloca i64, align 8
+  store i64 5, i64* %a, align 4
+  store i64* %a, i64** %b, align 8
+  %b1 = load i64*, i64** %b, align 8
+  store i64 12, i64* %b1, align 4
+  %a2 = load i64, i64* %a, align 4
+  %sitofp = sitofp i64 %a2 to double
   %call = call void @print(double %sitofp)
-  %add8 = add i64 %i.0, 1
-  br label %while.cond
-
-while.end:                                        ; preds = %while.cond
+  %b3 = load i64*, i64** %b, align 8
+  %ptrtoint = ptrtoint i64* %b3 to i64
+  %sitofp4 = sitofp i64 %ptrtoint to double
+  %call5 = call void @print(double %sitofp4)
+  %b6 = load i64*, i64** %b, align 8
+  %deref = load i64, i64* %b6, align 4
+  %sitofp7 = sitofp i64 %deref to double
+  %call8 = call void @print(double %sitofp7)
   ret void
 }

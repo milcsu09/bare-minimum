@@ -272,6 +272,8 @@ Lexer_Next (struct Lexer *lexer)
         return Lexer_Advance_N_Token (lexer, 3, TOKEN_3DOT);
       break;
 
+    case '&':
+      return Lexer_Advance_Token (lexer, TOKEN_AMPERSAND);
     case '+':
       return Lexer_Advance_Token (lexer, TOKEN_PLUS);
     case '*':

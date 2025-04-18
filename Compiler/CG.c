@@ -59,6 +59,38 @@ CG_Generate_Alloca (struct CG* cg, const char *name, LLVMTypeRef type)
 }
 
 
+LLVMValueRef
+CG_Generate_LValue(struct CG *cg, struct AST *ast, struct Scope *scope)
+{
+  switch (ast->kind)
+    {
+    case AST_IDENTIFIER:
+      {
+        const char *name = ast->token.value.s;
+
+        struct Symbol *symbol = Scope_Find (scope, name);
+
+        assert (symbol);
+
+        return symbol->value;
+      }
+    case AST_UNARY:
+      switch (ast->token.kind)
+        {
+        case TOKEN_STAR:
+          {
+            LLVMValueRef ptr = CG_Generate(cg, ast->child, scope);
+            return ptr;
+          }
+        default:
+          return NULL;
+        }
+    default:
+      return NULL;
+    }
+}
+
+
 LLVMValueRef CG_Generate_Program (struct CG *, struct AST *, struct Scope *);
 
 LLVMValueRef CG_Generate_Prototype (struct CG *, struct AST *, struct Scope *);
@@ -72,6 +104,8 @@ LLVMValueRef CG_Generate_Variable (struct CG *, struct AST *, struct Scope *);
 LLVMValueRef CG_Generate_If (struct CG *, struct AST *, struct Scope *);
 
 LLVMValueRef CG_Generate_While (struct CG *, struct AST *, struct Scope *);
+
+LLVMValueRef CG_Generate_Unary (struct CG *, struct AST *, struct Scope *);
 
 LLVMValueRef CG_Generate_Binary (struct CG *, struct AST *, struct Scope *);
 
@@ -177,7 +211,7 @@ CG_Generate_Function (struct CG *cg, struct AST *ast, struct Scope *scope)
   else
     LLVMBuildRetVoid (cg->builder);
 
-  LLVMRunFunctionPassManager (cg->pass, function);
+  // LLVMRunFunctionPassManager (cg->pass, function);
 
   Scope_Destroy_Value (child);
   cg->function = NULL;
@@ -233,20 +267,59 @@ CG_Generate_While (struct CG *cg, struct AST *ast, struct Scope *scope)
   return NULL;
 }
 
+LLVMValueRef
+CG_Generate_Unary (struct CG *cg, struct AST *ast, struct Scope *scope)
+{
+  enum Token_Kind operator = ast->token.kind;
+
+  if (operator == TOKEN_AMPERSAND)
+    return CG_Generate_LValue (cg, ast->child, scope);
+
+  LLVMValueRef value = CG_Generate (cg, ast->child, scope);
+
+  struct Type *t1 = ast->child->type;
+  enum Type_Kind k1 = t1->kind;
+
+  if (operator == TOKEN_STAR)
+    {
+      LLVMTypeRef type = Type_As_LLVM (t1->value.base, cg->context);
+      return LLVMBuildLoad2 (cg->builder, type, value, "deref");
+    }
+
+  if (Type_Kind_Is_Integer (k1))
+    switch (operator)
+      {
+      case TOKEN_PLUS:
+        return value;
+      case TOKEN_MINUS:
+        return LLVMBuildNeg (cg->builder, value, "neg");
+      default:
+        assert (0);
+      }
+
+  if (Type_Kind_Is_Float (k1))
+    switch (operator)
+      {
+      case TOKEN_PLUS:
+        return value;
+      case TOKEN_MINUS:
+        return LLVMBuildFNeg (cg->builder, value, "fneg");
+      default:
+        assert (0);
+      }
+
+  return NULL;
+
+}
 
 LLVMValueRef
 CG_Generate_Binary (struct CG *cg, struct AST *ast, struct Scope *scope)
 {
-  enum Token_Kind operator= ast->token.kind;
+  enum Token_Kind operator = ast->token.kind;
 
   if (operator == TOKEN_EQUALS)
     {
-      const char *name = ast->child->token.value.s;
-      struct Symbol *symbol = Scope_Find (scope, name);
-
-      assert (symbol);
-
-      LLVMValueRef ptr = symbol->value;
+      LLVMValueRef ptr = CG_Generate_LValue (cg, ast->child, scope);
 
       LLVMValueRef right = CG_Generate (cg, ast->child->next, scope);
       LLVMBuildStore (cg->builder, right, ptr);
@@ -375,6 +448,12 @@ CG_Generate_Cast (struct CG *cg, struct AST *ast, struct Scope *scope)
         return LLVMBuildFPTrunc (cg->builder, value, type, "fptrunc");
     }
 
+  if (k1 == TYPE_POINTER && k2 == TYPE_POINTER)
+    return LLVMBuildBitCast(cg->builder, value, type, "bitcast");
+
+  if (k1 == TYPE_POINTER && Type_Kind_Is_Integer (k2))
+    return LLVMBuildPtrToInt (cg->builder, value, type, "ptrtoint");
+
   assert (0);
 
   // printf ("IMPLEMENT CASTING HERE\n");
@@ -488,6 +567,8 @@ CG_Generate (struct CG *cg, struct AST *ast, struct Scope *scope)
     case AST_WHILE:
       return CG_Generate_While (cg, ast, scope);
 
+    case AST_UNARY:
+      return CG_Generate_Unary (cg, ast, scope);
     case AST_BINARY:
       return CG_Generate_Binary (cg, ast, scope);
     case AST_CAST:

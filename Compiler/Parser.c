@@ -105,7 +105,7 @@ Parser_Parse_Type (struct Parser *parser)
             {
               struct Type *argument;
 
-              argument = Parser_Parse_Type_Primary (parser);
+              argument = Parser_Parse_Type (parser);
 
               if (in_n >= in_capacity)
                 {
@@ -127,7 +127,7 @@ Parser_Parse_Type (struct Parser *parser)
         Parser_Expect_Advance (parser, TOKEN_RPAREN);
         Parser_Expect_Advance (parser, TOKEN_ARROW);
 
-        struct Type *out = Parser_Parse_Type_Primary (parser);
+        struct Type *out = Parser_Parse_Type (parser);
 
         struct Type_Function function;
 
@@ -137,6 +137,13 @@ Parser_Parse_Type (struct Parser *parser)
         free (in);
 
         return Type_Create_Function (function);
+      }
+      break;
+    case TOKEN_STAR:
+      {
+        Parser_Advance (parser);
+        struct Type *base = Parser_Parse_Type (parser);
+        return Type_Create_Pointer (base);
       }
       break;
     default:
@@ -336,7 +343,7 @@ Parser_Parse_Statement (struct Parser *parser)
         {
           Parser_Advance (parser);
 
-          result->type = Parser_Parse_Type_Primary (parser);
+          result->type = Parser_Parse_Type (parser);
 
           if (!Parser_Match (parser, TOKEN_EQUALS))
             {
@@ -646,10 +653,41 @@ Parser_Parse_Call_Expression (struct Parser *parser)
 
 
 struct AST *
+Parser_Parse_Unary (struct Parser *parser)
+{
+  struct Location location = parser->location;
+
+  struct Token operator = parser->current;
+
+  Parser_Advance (parser);
+
+  struct AST *atom;
+
+  atom = Parser_Parse_Atom_Expression (parser);
+
+  struct AST *result;
+
+  result = AST_Create (location, AST_UNARY);
+
+  result->token = operator;
+
+  AST_Append (result, atom);
+
+  return result;
+}
+
+
+struct AST *
 Parser_Parse_Atom_Expression (struct Parser *parser)
 {
   switch (parser->current.kind)
     {
+    case TOKEN_PLUS:
+    case TOKEN_MINUS:
+    case TOKEN_AMPERSAND:
+    case TOKEN_STAR:
+      return Parser_Parse_Unary (parser);
+
     case TOKEN_LPAREN:
       return Parser_Parse_Group_Expression (parser);
     case TOKEN_LBRACE:
