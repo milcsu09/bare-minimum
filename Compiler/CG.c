@@ -169,6 +169,7 @@ CG_Generate_Program (struct CG *cg, struct AST *ast, struct Scope *scope)
 LLVMValueRef
 CG_Generate_Prototype (struct CG *cg, struct AST *ast, struct Scope *scope)
 {
+  (void)scope;
   const char *name = ast->child->token.value.s;
 
   LLVMTypeRef type = Type_As_LLVM (ast->type, cg->context);
@@ -234,7 +235,7 @@ CG_Generate_Function (struct CG *cg, struct AST *ast, struct Scope *scope)
   else
     LLVMBuildRetVoid (cg->builder);
 
-  LLVMRunFunctionPassManager (cg->pass, function);
+  // LLVMRunFunctionPassManager (cg->pass, function);
 
   Scope_Destroy_Value (child);
   cg->function = NULL;
@@ -310,7 +311,7 @@ CG_Generate_While (struct CG *cg, struct AST *ast, struct Scope *scope)
   cond_block = LLVMGetInsertBlock (cg->builder);
 
   LLVMPositionBuilderAtEnd (cg->builder, body_block);
-  LLVMValueRef body_value = CG_Generate (cg, ast->child->next, scope);
+  CG_Generate (cg, ast->child->next, scope);
 
   LLVMBuildBr (cg->builder, cond_block);
   body_block = LLVMGetInsertBlock (cg->builder);
@@ -559,16 +560,40 @@ CG_Generate_Cast (struct CG *cg, struct AST *ast, struct Scope *scope)
 LLVMValueRef
 CG_Generate_Compound (struct CG *cg, struct AST *ast, struct Scope *scope)
 {
-  struct AST *current = ast->child;
+  struct AST *current;
+
+  size_t defer_n = 0;
+
+  current = ast->child;
+  while (current)
+    {
+      if (current->kind == AST_DEFER)
+        defer_n++;
+      current = current->next;
+    }
+
+  struct AST *defer[defer_n];
 
   struct Scope *child = Scope_Create (scope);
 
   LLVMValueRef result;
 
+  size_t defer_i = 0;
+
+  current = ast->child;
+
   while (current)
     {
-      result = CG_Generate (cg, current, child);
+      if (current->kind != AST_DEFER)
+        result = CG_Generate (cg, current, child);
+      else
+        defer[defer_i++] = current;
       current = current->next;
+    }
+
+  for (size_t i = defer_n; i--;)
+    {
+      CG_Generate (cg, defer[i]->child, child);
     }
 
   Scope_Destroy_Value (child);
@@ -599,7 +624,7 @@ CG_Generate_Call (struct CG *cg, struct AST *ast, struct Scope *scope)
 {
   const char *name = ast->child->token.value.s;
 
-  struct Type_Function type_f = ast->child->type->value.function;
+  // struct Type_Function type_f = ast->child->type->value.function;
 
   LLVMValueRef function = LLVMGetNamedFunction (cg->module, name);
 
@@ -635,6 +660,7 @@ CG_Generate_Call (struct CG *cg, struct AST *ast, struct Scope *scope)
 LLVMValueRef
 CG_Generate_I64 (struct CG *cg, struct AST *ast, struct Scope *scope)
 {
+  (void)scope;
   return LLVMConstInt(Type_As_LLVM (ast->type, cg->context),
                       ast->token.value.i64, 0);
 }
@@ -643,6 +669,7 @@ CG_Generate_I64 (struct CG *cg, struct AST *ast, struct Scope *scope)
 LLVMValueRef
 CG_Generate_F64 (struct CG *cg, struct AST *ast, struct Scope *scope)
 {
+  (void)scope;
   return LLVMConstReal(Type_As_LLVM (ast->type, cg->context),
                        ast->token.value.f64);
 }
@@ -651,6 +678,7 @@ CG_Generate_F64 (struct CG *cg, struct AST *ast, struct Scope *scope)
 LLVMValueRef
 CG_Generate_String (struct CG *cg, struct AST *ast, struct Scope *scope)
 {
+  (void)scope;
   const char *string = ast->token.value.s;
   LLVMValueRef str = LLVMBuildGlobalStringPtr(cg->builder, string, "str");
   // LLVMValueRef globalStr = LLVMGetNamedGlobal(cg->module, "str");
@@ -672,6 +700,8 @@ CG_Generate (struct CG *cg, struct AST *ast, struct Scope *scope)
       return CG_Generate_Function (cg, ast, scope);
 
     case AST_ALIAS:
+      return NULL;
+    case AST_DEFER:
       return NULL;
 
     case AST_VARIABLE:

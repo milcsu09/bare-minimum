@@ -60,6 +60,8 @@ void Resolver_Resolve_Function (struct AST *, struct Scope *);
 
 void Resolver_Resolve_Alias (struct AST *, struct Scope *);
 
+void Resolver_Resolve_Defer (struct AST *, struct Scope *);
+
 void Resolver_Resolve_Variable (struct AST *, struct Scope *);
 
 void Resolver_Resolve_If (struct AST *, struct Scope *);
@@ -223,6 +225,14 @@ Resolver_Resolve_Alias (struct AST *ast, struct Scope *scope)
 
   Scope_Add (scope, Symbol_Create_Type (name, type));
 }
+
+
+void
+Resolver_Resolve_Defer (struct AST *ast, struct Scope *scope)
+{
+  Resolver_Resolve (ast->child, scope);
+}
+
 
 void
 Resolver_Resolve_Variable (struct AST *ast, struct Scope *scope)
@@ -552,6 +562,9 @@ Resolver_Resolve (struct AST *ast, struct Scope *scope)
 
     case AST_ALIAS:
       Resolver_Resolve_Alias (ast, scope);
+      break;
+    case AST_DEFER:
+      Resolver_Resolve_Defer (ast, scope);
       break;
 
     case AST_VARIABLE:

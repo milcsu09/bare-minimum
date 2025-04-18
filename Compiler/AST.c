@@ -10,6 +10,7 @@ static const char *const AST_KIND_STRING[] = {
   "FUNCTION",
 
   "ALIAS",
+  "DEFER",
 
   "VARIABLE",
   "IF",

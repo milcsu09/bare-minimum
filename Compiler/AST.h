@@ -13,6 +13,7 @@ enum AST_Kind
   AST_FUNCTION,
 
   AST_ALIAS,
+  AST_DEFER,
 
   AST_VARIABLE,
   AST_IF,

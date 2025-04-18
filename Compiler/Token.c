@@ -20,6 +20,7 @@ static const char *const TOKEN_KIND_STRING[] = {
   "while",
   "alias",
   "as",
+  "defer",
 
   ";",
   "(",

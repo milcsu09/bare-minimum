@@ -186,6 +186,8 @@ struct AST *Parser_Parse_Statement (struct Parser *);
 
 struct AST *Parser_Parse_Alias_Statement (struct Parser *);
 
+struct AST *Parser_Parse_Defer_Statement (struct Parser *);
+
 struct AST *Parser_Parse_Control_Statement (struct Parser *);
 
 struct AST *Parser_Parse_If_Statement (struct Parser *);
@@ -405,6 +407,34 @@ Parser_Parse_Alias_Statement (struct Parser *parser)
 
       result->token = name;
       result->type = type;
+
+      Parser_Expect (parser, TOKEN_SEMICOLON);
+
+      return result;
+    }
+
+  return Parser_Parse_Defer_Statement (parser);
+}
+
+
+struct AST *
+Parser_Parse_Defer_Statement (struct Parser *parser)
+{
+  struct Location location = parser->location;
+
+  if (Parser_Match (parser, TOKEN_DEFER))
+    {
+      Parser_Expect_Advance (parser, TOKEN_DEFER);
+
+      struct AST *expression;
+
+      expression = Parser_Parse_Expression (parser);
+
+      struct AST *result;
+
+      result = AST_Create (location, AST_DEFER);
+
+      AST_Append (result, expression);
 
       Parser_Expect (parser, TOKEN_SEMICOLON);
 

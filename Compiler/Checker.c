@@ -10,6 +10,8 @@ struct Type *Checker_Check_Function (struct AST *);
 
 // struct Type *Checker_Check_Alias (struct AST *);
 
+struct Type *Checker_Check_Defer (struct AST *);
+
 struct Type *Checker_Check_Variable (struct AST *);
 
 struct Type *Checker_Check_If (struct AST *);
@@ -69,6 +71,14 @@ Checker_Check_Function (struct AST *ast)
 {
   Checker_Check (ast->child);
   return Checker_Check (ast->child->next);
+}
+
+
+struct Type *
+Checker_Check_Defer (struct AST *ast)
+{
+  Checker_Check (ast->child);
+  return NULL;
 }
 
 
@@ -253,6 +263,8 @@ Checker_Check (struct AST *ast)
     case AST_ALIAS:
       /* No need. */
       return NULL;
+    case AST_DEFER:
+      return Checker_Check_Defer (ast);
 
     case AST_VARIABLE:
       return Checker_Check_Variable (ast);

@@ -3,43 +3,66 @@ source_filename = "Main"
 target datalayout = "e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-f80:128-n8:16:32:64-S128"
 target triple = "x86_64-pc-linux-gnu"
 
-@str = private unnamed_addr constant [5 x i8] c"%ld\0A\00", align 1
-@str.1 = private unnamed_addr constant [5 x i8] c"Test\00", align 1
-
 declare void @printf(i8*, ...)
-
-declare void @scanf(i8*, void*)
 
 declare void @puts(i8*)
 
-declare i64 @strlen(i8*)
+declare void* @malloc(i64)
 
-define i64 @my_strlen(i8* %s) {
-entry:
-  %deref8 = load i8, i8* %s, align 1
-  %igt.not9 = icmp eq i8 %deref8, 0
-  br i1 %igt.not9, label %while.end, label %while.body.lr.ph
-
-while.body.lr.ph:                                 ; preds = %entry
-  br label %while.body
-
-while.body:                                       ; preds = %while.body.lr.ph, %while.body
-  %i.011 = phi i64 [ 0, %while.body.lr.ph ], [ %add, %while.body ]
-  %add = add i64 %i.011, 1
-  %sunkaddr = getelementptr i8, i8* %s, i64 %i.011
-  %sunkaddr15 = getelementptr i8, i8* %sunkaddr, i64 1
-  %deref = load i8, i8* %sunkaddr15, align 1
-  %igt.not = icmp eq i8 %deref, 0
-  br i1 %igt.not, label %while.end, label %while.body
-
-while.end:                                        ; preds = %while.body, %entry
-  %i.0.lcssa = phi i64 [ 0, %entry ], [ %add, %while.body ]
-  ret i64 %i.0.lcssa
-}
+declare void @free(void*)
 
 define void @__main(i32 %argc, i8** %argv) {
 entry:
-  %0 = tail call i64 @my_strlen(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @str.1, i64 0, i64 0))
-  tail call void (i8*, ...) @printf(i8* noundef nonnull dereferenceable(1) getelementptr inbounds ([5 x i8], [5 x i8]* @str, i64 0, i64 0), i64 %0)
+  %xs = alloca i64**, align 8
+  %argv2 = alloca i8**, align 8
+  %argc1 = alloca i32, align 4
+  store i32 %argc, i32* %argc1, align 4
+  store i8** %argv, i8*** %argv2, align 8
+  %0 = call void* @malloc(i64 32)
+  %bitcast = bitcast void* %0 to i64**
+  store i64** %bitcast, i64*** %xs, align 8
+  %xs3 = load i64**, i64*** %xs, align 8
+  %gep30 = bitcast i64** %xs3 to i64**
+  %1 = call void* @malloc(i64 32)
+  %ptrtoint = ptrtoint void* %1 to i64
+  store i64 %ptrtoint, i64** %gep30, align 4
+  %xs4 = load i64**, i64*** %xs, align 8
+  %gep5 = getelementptr i64*, i64** %xs4, i64 1
+  %2 = call void* @malloc(i64 32)
+  %ptrtoint6 = ptrtoint void* %2 to i64
+  store i64 %ptrtoint6, i64** %gep5, align 4
+  %xs7 = load i64**, i64*** %xs, align 8
+  %gep8 = getelementptr i64*, i64** %xs7, i64 2
+  %3 = call void* @malloc(i64 32)
+  %ptrtoint9 = ptrtoint void* %3 to i64
+  store i64 %ptrtoint9, i64** %gep8, align 4
+  %xs10 = load i64**, i64*** %xs, align 8
+  %gep11 = getelementptr i64*, i64** %xs10, i64 3
+  %4 = call void* @malloc(i64 32)
+  %ptrtoint12 = ptrtoint void* %4 to i64
+  store i64 %ptrtoint12, i64** %gep11, align 4
+  %xs13 = load i64**, i64*** %xs, align 8
+  %gep1431 = bitcast i64** %xs13 to i64**
+  %deref = load i64*, i64** %gep1431, align 8
+  %bitcast15 = bitcast i64* %deref to void*
+  call void @free(void* %bitcast15)
+  %xs16 = load i64**, i64*** %xs, align 8
+  %gep17 = getelementptr i64*, i64** %xs16, i64 1
+  %deref18 = load i64*, i64** %gep17, align 8
+  %bitcast19 = bitcast i64* %deref18 to void*
+  call void @free(void* %bitcast19)
+  %xs20 = load i64**, i64*** %xs, align 8
+  %gep21 = getelementptr i64*, i64** %xs20, i64 2
+  %deref22 = load i64*, i64** %gep21, align 8
+  %bitcast23 = bitcast i64* %deref22 to void*
+  call void @free(void* %bitcast23)
+  %xs24 = load i64**, i64*** %xs, align 8
+  %gep25 = getelementptr i64*, i64** %xs24, i64 3
+  %deref26 = load i64*, i64** %gep25, align 8
+  %bitcast27 = bitcast i64* %deref26 to void*
+  call void @free(void* %bitcast27)
+  %xs28 = load i64**, i64*** %xs, align 8
+  %bitcast29 = bitcast i64** %xs28 to void*
+  call void @free(void* %bitcast29)
   ret void
 }

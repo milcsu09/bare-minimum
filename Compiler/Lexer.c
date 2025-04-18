@@ -203,6 +203,7 @@ static struct Keyword KEYWORD_TABLE[] = {
   { "while", TOKEN_WHILE },
   { "alias", TOKEN_ALIAS },
   { "as", TOKEN_AS },
+  { "defer", TOKEN_DEFER },
 };
 
 
