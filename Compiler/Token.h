@@ -56,6 +56,8 @@ enum Token_Kind
   TOKEN_LE,
   TOKEN_GT,
   TOKEN_GE,
+  TOKEN_DEQ,
+  TOKEN_NEQ,
 };
 
 

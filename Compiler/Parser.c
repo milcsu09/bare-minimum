@@ -616,6 +616,8 @@ struct Operator OPERATOR_TABLE[] = {
   {TOKEN_LE, 80, 0},
   {TOKEN_GT, 80, 0},
   {TOKEN_GE, 80, 0},
+  {TOKEN_DEQ, 70, 0},
+  {TOKEN_NEQ, 70, 0},
 };
 
 

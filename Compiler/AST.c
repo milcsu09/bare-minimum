@@ -121,6 +121,8 @@ AST_Is_LV (struct AST *ast)
         }
     case AST_ACCESS:
       return 1;
+    case AST_CAST:
+      return AST_Is_LV (ast->child);
     default:
       return 0;
     }

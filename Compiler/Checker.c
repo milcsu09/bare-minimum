@@ -226,12 +226,31 @@ Checker_Check_Call (struct AST *ast)
   while (current)
     {
       struct Type *type = Checker_Check (current);
-      if (type && type->kind == TYPE_VOID)
+
+      switch (type->kind)
         {
+        case TYPE_VOID:
+        case TYPE_FUNCTION:
           Diagnostic (current->location, D_ERROR,
-                      "expected non-void value as function parameter");
+                      "'%s' as function parameter",
+                      Type_Kind_String (type->kind));
           Halt ();
+        default:
+          break;
         }
+
+      switch (type->kind)
+        {
+        case TYPE_STRUCTURE:
+        case TYPE_INITIALIZER:
+          Diagnostic (current->location, D_WARNING,
+                      "'%s' as function parameter",
+                      Type_Kind_String (type->kind));
+          break;
+        default:
+          break;
+        }
+
 
       current = current->next;
     }

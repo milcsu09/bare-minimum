@@ -240,7 +240,7 @@ CG_Generate_Function (struct CG *cg, struct AST *ast, struct Scope *scope)
   else
     LLVMBuildRetVoid (cg->builder);
 
-  // LLVMRunFunctionPassManager (cg->pass, function);
+  LLVMRunFunctionPassManager (cg->pass, function);
 
   Scope_Destroy_Value (child);
   cg->function = NULL;
@@ -409,8 +409,7 @@ CG_Generate_Binary (struct CG *cg, struct AST *ast, struct Scope *scope)
             return LLVMBuildGEP2 (cg->builder, type, left, indices, 1, "gep");
           }
         default:
-          Diagnostic (ast->child->location, D_ERROR, "unsupported operand");
-          Halt ();
+          goto invalid;
           break;
         }
     }
@@ -439,8 +438,12 @@ CG_Generate_Binary (struct CG *cg, struct AST *ast, struct Scope *scope)
       case TOKEN_GE:
         return LLVMBuildICmp (cg->builder, signedness ? LLVMIntSGE : LLVMIntUGE,
                               left, right, "ige");
+      case TOKEN_DEQ:
+        return LLVMBuildICmp (cg->builder, LLVMIntEQ, left, right, "ieq");
+      case TOKEN_NEQ:
+        return LLVMBuildICmp (cg->builder, LLVMIntNE, left, right, "ine");
       default:
-        assert (0);
+        goto invalid;
       }
 
   if (Type_Kind_Is_Float (k1))
@@ -463,11 +466,20 @@ CG_Generate_Binary (struct CG *cg, struct AST *ast, struct Scope *scope)
         return LLVMBuildFCmp (cg->builder, LLVMRealOGT, left, right, "fgt");
       case TOKEN_GE:
         return LLVMBuildFCmp (cg->builder, LLVMRealOGE, left, right, "fge");
+      case TOKEN_DEQ:
+        return LLVMBuildFCmp (cg->builder, LLVMRealOEQ, left, right, "feq");
+      case TOKEN_NEQ:
+        return LLVMBuildFCmp (cg->builder, LLVMRealONE, left, right, "feq");
       default:
-        assert (0);
+        goto invalid;
       }
 
-  return NULL;
+invalid:
+  Diagnostic (ast->child->location, D_ERROR,
+              "unsupported '%s' operand between '%s' and '%s'",
+              Token_Kind_String (operator), Type_Kind_String (k1),
+              Type_Kind_String (k2));
+  Halt ();
 }
 
 LLVMValueRef

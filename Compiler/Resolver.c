@@ -363,7 +363,7 @@ Resolver_Resolve_Unary (struct AST *ast, struct Scope *scope)
       break;
     case TOKEN_STAR:
       // if (ast->child->type->kind != TYPE_POINTER)
-      if (!AST_Is_LV (ast->child))
+      if (!AST_Is_LV (ast->child) && ast->child->type->kind != TYPE_POINTER)
         {
           Diagnostic (ast->location, D_ERROR, "cannot dereference right-value");
           Halt ();
@@ -412,6 +412,8 @@ Resolver_Resolve_Binary (struct AST *ast, struct Scope *scope)
     case TOKEN_LE:
     case TOKEN_GT:
     case TOKEN_GE:
+    case TOKEN_DEQ:
+    case TOKEN_NEQ:
       ast->type = Type_Create (TYPE_BOOL);
       break;
     default:

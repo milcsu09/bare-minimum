@@ -268,6 +268,49 @@ Lexer_Lex_String (struct Lexer *lexer)
 
 
 struct Token
+Lexer_Lex_Character (struct Lexer *lexer)
+{
+  struct Location location = lexer->location;
+  const char *start = lexer->current;
+
+  Lexer_Advance (lexer);
+
+  while (strchr ("\'\n", *lexer->current) == NULL)
+    {
+      if (*lexer->current == '\\')
+        Lexer_Advance (lexer);
+      Lexer_Advance (lexer);
+    }
+
+  if (*lexer->current != '\'')
+    {
+      Diagnostic (location, D_ERROR, "unterimated character-literal");
+      Halt ();
+    }
+
+  Lexer_Advance (lexer);
+
+  char *s = String_Copy_Until (start + 1, lexer->current - 1);
+
+  String_Escape (s);
+
+  if (strlen (s) != 1)
+    {
+      Diagnostic (location, D_ERROR, "character-literal must be length of one");
+      Halt ();
+    }
+
+  struct Token token;
+
+  token = Token_Create_I64 (location, TOKEN_I64, (char)*s);
+
+  free (s);
+
+  return token;
+}
+
+
+struct Token
 Lexer_Next (struct Lexer *lexer)
 {
   while (isspace (*lexer->current))
@@ -301,6 +344,8 @@ Lexer_Next (struct Lexer *lexer)
     case '}':
       return Lexer_Advance_Token (lexer, TOKEN_RBRACE);
     case '=':
+      if (Lexer_Match_Start (lexer, "=="))
+        return Lexer_Advance_N_Token (lexer, 2, TOKEN_DEQ);
       return Lexer_Advance_Token (lexer, TOKEN_EQUALS);
     case ':':
       if (Lexer_Match_Start (lexer, ":="))
@@ -333,6 +378,10 @@ Lexer_Next (struct Lexer *lexer)
       if (Lexer_Match_Start (lexer, ">="))
         return Lexer_Advance_N_Token (lexer, 2, TOKEN_GE);
       return Lexer_Advance_Token (lexer, TOKEN_GT);
+    case '!':
+      if (Lexer_Match_Start (lexer, "!="))
+        return Lexer_Advance_N_Token (lexer, 2, TOKEN_NEQ);
+      break;
 
     case '\0':
       return Token_Create (lexer->location, TOKEN_EOF);
@@ -346,6 +395,9 @@ Lexer_Next (struct Lexer *lexer)
 
   if (c == '"')
     return Lexer_Lex_String (lexer);
+
+  if (c == '\'')
+    return Lexer_Lex_Character (lexer);
 
   Diagnostic (lexer->location, D_ERROR, "unexpected character '%c'", c);
   Halt ();
