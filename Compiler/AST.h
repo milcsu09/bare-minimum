@@ -65,6 +65,8 @@ int AST_Is_LV (struct AST *);
 
 void AST_Diagnostic (struct AST *);
 
+void AST_Dump (struct AST *);
+
 
 #endif // AST_H
 

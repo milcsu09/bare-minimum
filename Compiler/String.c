@@ -91,6 +91,9 @@ String_Escape (char *s)
             case '\"':
               *j = '\"';
               break;
+            case '0':
+              *j = '\0';
+              break;
             default:
               *j = '\\';
               *++j = *i;

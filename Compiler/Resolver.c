@@ -364,12 +364,12 @@ Resolver_Resolve_Unary (struct AST *ast, struct Scope *scope)
       type = Type_Create_Pointer (Type_Copy (ast->child->type));
       break;
     case TOKEN_STAR:
-      // if (ast->child->type->kind != TYPE_POINTER)
-      if (!AST_Is_LV (ast->child) && ast->child->type->kind != TYPE_POINTER)
-        {
-          Diagnostic (ast->location, D_ERROR, "cannot dereference right-value");
-          Halt ();
-        }
+      // TODO: Fix this
+      // if (!AST_Is_LV (ast->child) || ast->child->type->kind != TYPE_POINTER)
+      //   {
+      //     Diagnostic (ast->location, D_ERROR, "cannot dereference right-value");
+      //     Halt ();
+      //   }
       type = Type_Copy (ast->child->type->value.base);
       break;
     default:

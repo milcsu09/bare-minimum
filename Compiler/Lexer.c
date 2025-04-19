@@ -2,6 +2,7 @@
 #include "String.h"
 #include "Token.h"
 #include <ctype.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -263,11 +264,13 @@ Lexer_Lex_Character (struct Lexer *lexer)
 
   Lexer_Advance (lexer);
 
+  size_t length = 0;
   while (strchr ("\'\n", *lexer->current) == NULL)
     {
       if (*lexer->current == '\\')
         Lexer_Advance (lexer);
       Lexer_Advance (lexer);
+      length++;
     }
 
   if (*lexer->current != '\'')
@@ -276,17 +279,17 @@ Lexer_Lex_Character (struct Lexer *lexer)
       Halt ();
     }
 
+  if (length != 1)
+    {
+      Diagnostic (location, D_ERROR, "character-literal must be length of one 1");
+      Halt ();
+    }
+
   Lexer_Advance (lexer);
 
   char *s = String_Copy_Until (start + 1, lexer->current - 1);
 
   String_Escape (s);
-
-  if (strlen (s) != 1)
-    {
-      Diagnostic (location, D_ERROR, "character-literal must be length of one");
-      Halt ();
-    }
 
   struct Token token;
 

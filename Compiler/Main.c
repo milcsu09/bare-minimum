@@ -60,7 +60,8 @@ main (void)
   // printf ("Parser finished.\n");
 
   // fprintf (stderr, "----------------\n");
-  // AST_Diagnostic (ast);
+  // // AST_Diagnostic (ast);
+  // AST_Dump (ast);
   // fprintf (stderr, "----------------\n");
 
   struct Scope *type_scope;
@@ -83,10 +84,14 @@ main (void)
   Resolver_Resolve (ast, type_scope);
 
   // printf ("Resolver finished.\n");
-
   // fprintf (stderr, "----------------\n");
   // AST_Diagnostic (ast);
   // fprintf (stderr, "----------------\n");
+
+  fprintf (stderr, "----------------\n");
+  AST_Diagnostic (ast);
+  AST_Dump (ast);
+  fprintf (stderr, "----------------\n");
 
   Checker_Check (ast);
 
