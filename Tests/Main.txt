@@ -1,10 +1,8 @@
 
 printf(fmt) : (*U8, ...) -> Void;
 
-malloc(n) : (U64) -> *Void;
 calloc(n, m) : (U64, U64) -> *Void;
 free(p) : (*Void) -> Void;
-
 
 alias
   [
@@ -12,40 +10,8 @@ alias
     next : *Void
   ] as Node;
 
-
-node_create(value) : (I64) -> *Node =
-  {
-    node := calloc(1, 16) as *Node;
-
-    *node.value = value;
-    *node.next = 0 as *Void;
-
-    node
-  };
-
-
 __main(argc, argv) : (I32, **U8) -> Void =
   {
-    root := node_create(12);
-    defer free(root);
-
-    a := node_create(34);
-    defer free(a);
-
-    b := node_create(56);
-    defer free(b);
-
-    *a.next = b;
-
-    *root.next = a;
-
-    current := root;
-
-    while current as I64 != 0 then
-      {
-        printf("%d\n", *current.value);
-        current = *current.next;
-      };
-
+    printf("%ld\n", sizeof Node);
   };
 

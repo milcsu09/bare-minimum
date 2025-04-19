@@ -31,6 +31,7 @@ enum AST_Kind
   AST_F64,
   AST_STRING,
   AST_INITIALIZER,
+  AST_SIZEOF,
 };
 
 

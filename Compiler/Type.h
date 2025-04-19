@@ -78,6 +78,8 @@ void Type_Field_Destroy (struct Type_Field);
 
 int Type_Field_Match (struct Type_Field, struct Type_Field);
 
+int Type_Function_Sizeof (struct Type_Function);
+
 void Type_Field_Diagnostic (struct Type_Field);
 
 
@@ -97,6 +99,8 @@ void Type_Structure_Destroy (struct Type_Structure);
 int Type_Structure_Match (struct Type_Structure, struct Type_Structure);
 
 LLVMTypeRef Type_Structure_As_LLVM (struct Type_Structure, LLVMContextRef);
+
+int Type_Structure_Sizeof (struct Type_Structure);
 
 void Type_Structure_Diagnostic (struct Type_Structure);
 
@@ -136,6 +140,8 @@ int Type_Match (struct Type *, struct Type *);
 int Type_Castable (struct Type *, struct Type *);
 
 LLVMTypeRef Type_As_LLVM (struct Type *, LLVMContextRef);
+
+int Type_Sizeof (struct Type *);
 
 void Type_Diagnostic (struct Type *);
 

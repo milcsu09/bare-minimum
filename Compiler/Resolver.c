@@ -111,6 +111,8 @@ void Resolver_Resolve_String (struct AST *, struct Scope *);
 
 void Resolver_Resolve_Initializer (struct AST *, struct Scope *);
 
+void Resolver_Resolve_Sizeof (struct AST *, struct Scope *);
+
 void
 Resolver_Resolve_Program (struct AST *ast, struct Scope *scope)
 {
@@ -713,6 +715,15 @@ Resolver_Resolve_Initializer (struct AST *ast, struct Scope *scope)
     }
 }
 
+
+void
+Resolver_Resolve_Sizeof (struct AST *ast, struct Scope *scope)
+{
+  struct Type *type = Resolver_Resolve_Type (ast->type, scope);
+  AST_Switch_Type (ast, type);
+}
+
+
 void
 Resolver_Resolve (struct AST *ast, struct Scope *scope)
 {
@@ -779,6 +790,9 @@ Resolver_Resolve (struct AST *ast, struct Scope *scope)
       break;
     case AST_INITIALIZER:
       Resolver_Resolve_Initializer (ast, scope);
+      break;
+    case AST_SIZEOF:
+      Resolver_Resolve_Sizeof (ast, scope);
       break;
     }
 }

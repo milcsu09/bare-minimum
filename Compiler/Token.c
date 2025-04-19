@@ -21,6 +21,7 @@ static const char *const TOKEN_KIND_STRING[] = {
   "alias",
   "as",
   "defer",
+  "sizeof",
 
   ";",
   "(",

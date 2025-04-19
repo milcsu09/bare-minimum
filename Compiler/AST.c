@@ -28,6 +28,7 @@ static const char *const AST_KIND_STRING[] = {
   "F64",
   "STRING",
   "INITIALIZER",
+  "SIZEOF",
 };
 
 

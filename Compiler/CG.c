@@ -167,6 +167,8 @@ LLVMValueRef CG_Generate_String (struct CG *, struct AST *, struct Scope *);
 LLVMValueRef CG_Generate_Initializer (struct CG *, struct AST *,
                                       struct Scope *);
 
+LLVMValueRef CG_Generate_Sizeof (struct CG *, struct AST *, struct Scope *);
+
 LLVMValueRef
 CG_Generate_Program (struct CG *cg, struct AST *ast, struct Scope *scope)
 {
@@ -500,10 +502,10 @@ invalid:
 LLVMValueRef
 CG_Generate_Cast (struct CG *cg, struct AST *ast, struct Scope *scope)
 {
+  LLVMValueRef value = CG_Generate (cg, ast->child, scope);
+
   struct Type *t1 = ast->child->type;
   struct Type *t2 = ast->type;
-
-  LLVMValueRef value = CG_Generate (cg, ast->child, scope);
 
   // No need to cast when types match!
   if (Type_Match (t1, t2))
@@ -746,6 +748,18 @@ CG_Generate_Initializer (struct CG *cg, struct AST *ast, struct Scope *scope)
   assert (0);
 }
 
+
+LLVMValueRef
+CG_Generate_Sizeof (struct CG *cg, struct AST *ast, struct Scope *scope)
+{
+  (void)scope;
+  int size = Type_Sizeof (ast->type);
+  AST_Switch_Type (ast, Type_Create (TYPE_U64));
+  return LLVMConstInt (LLVMInt64TypeInContext (cg->context),
+                       size, 1);
+}
+
+
 LLVMValueRef
 CG_Generate (struct CG *cg, struct AST *ast, struct Scope *scope)
 {
@@ -795,6 +809,8 @@ CG_Generate (struct CG *cg, struct AST *ast, struct Scope *scope)
       return CG_Generate_String (cg, ast, scope);
     case AST_INITIALIZER:
       return CG_Generate_Initializer (cg, ast, scope);
+    case AST_SIZEOF:
+      return CG_Generate_Sizeof (cg, ast, scope);
     }
 }
 

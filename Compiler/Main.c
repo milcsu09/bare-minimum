@@ -57,7 +57,7 @@ main (void)
 
   struct AST *ast = Parser_Parse (&parser);
 
-  printf ("Parser finished.\n");
+  // printf ("Parser finished.\n");
 
   // fprintf (stderr, "----------------\n");
   // AST_Diagnostic (ast);
@@ -82,7 +82,7 @@ main (void)
 
   Resolver_Resolve (ast, type_scope);
 
-  printf ("Resolver finished.\n");
+  // printf ("Resolver finished.\n");
 
   // fprintf (stderr, "----------------\n");
   // AST_Diagnostic (ast);
@@ -90,7 +90,7 @@ main (void)
 
   Checker_Check (ast);
 
-  printf ("Type checker finished.\n");
+  // printf ("Type checker finished.\n");
 
   struct CG *cg = CG_Create ();
 
@@ -100,7 +100,7 @@ main (void)
 
   CG_Generate (cg, ast, cg_scope);
 
-  printf ("Code generator finished.\n");
+  // printf ("Code generator finished.\n");
 
   // ASDASD
 

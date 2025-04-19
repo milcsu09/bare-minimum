@@ -184,19 +184,6 @@ struct Keyword
 
 
 static struct Keyword KEYWORD_TABLE[] = {
-  // { "Void", TOKEN_TYPE_VOID },
-  // { "I8", TOKEN_TYPE_I8 },
-  // { "I16", TOKEN_TYPE_I16 },
-  // { "I32", TOKEN_TYPE_I32 },
-  // { "I64", TOKEN_TYPE_I64 },
-  // { "U8", TOKEN_TYPE_U8 },
-  // { "U16", TOKEN_TYPE_U16 },
-  // { "U32", TOKEN_TYPE_U32 },
-  // { "U64", TOKEN_TYPE_U64 },
-  // { "F32", TOKEN_TYPE_F32 },
-  // { "F64", TOKEN_TYPE_F64 },
-  // { "Bool", TOKEN_TYPE_BOOL },
-
   { "then", TOKEN_THEN },
   { "if", TOKEN_IF },
   { "else", TOKEN_ELSE },
@@ -204,6 +191,7 @@ static struct Keyword KEYWORD_TABLE[] = {
   { "alias", TOKEN_ALIAS },
   { "as", TOKEN_AS },
   { "defer", TOKEN_DEFER },
+  { "sizeof", TOKEN_SIZEOF },
 };
 
 

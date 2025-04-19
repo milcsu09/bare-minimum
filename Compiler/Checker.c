@@ -40,6 +40,8 @@ struct Type *Checker_Check_String (struct AST *);
 
 struct Type *Checker_Check_Initializer (struct AST *);
 
+struct Type *Checker_Check_Sizeof (struct AST *);
+
 
 struct Type *
 Checker_Check_Program (struct AST *ast)
@@ -303,6 +305,22 @@ Checker_Check_Initializer (struct AST *ast)
 
 
 struct Type *
+Checker_Check_Sizeof (struct AST *ast)
+{
+  switch (ast->type->kind)
+    {
+    case TYPE_VOID:
+      Diagnostic (ast->location, D_WARNING, "size-of 'Void'?");
+      break;
+    default:
+      break;
+    }
+
+  return Type_Create (TYPE_U64);
+}
+
+
+struct Type *
 Checker_Check (struct AST *ast)
 {
   // printf ("%s\n", AST_Kind_String (ast->kind));
@@ -352,6 +370,8 @@ Checker_Check (struct AST *ast)
       return Checker_Check_String (ast);
     case AST_INITIALIZER:
       return Checker_Check_Initializer (ast);
+    case AST_SIZEOF:
+      return Checker_Check_Sizeof (ast);
     }
 }
 

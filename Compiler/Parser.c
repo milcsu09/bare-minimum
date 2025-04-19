@@ -265,6 +265,8 @@ struct AST *Parser_Parse_String (struct Parser *);
 
 struct AST *Parser_Parse_Initializer (struct Parser *);
 
+struct AST *Parser_Parse_Sizeof (struct Parser *);
+
 
 struct AST *
 Parser_Parse_Program (struct Parser *parser)
@@ -829,6 +831,8 @@ Parser_Parse_Atom_Expression (struct Parser *parser)
       return Parser_Parse_String (parser);
     case TOKEN_LBRACKET:
       return Parser_Parse_Initializer (parser);
+    case TOKEN_SIZEOF:
+      return Parser_Parse_Sizeof (parser);
     default:
       {
         const char *b = Token_Kind_String (parser->current.kind);
@@ -987,6 +991,25 @@ Parser_Parse_Initializer (struct Parser *parser)
     }
 
   Parser_Expect_Advance (parser, TOKEN_RBRACKET);
+
+  return result;
+}
+
+
+struct AST *
+Parser_Parse_Sizeof (struct Parser *parser)
+{
+  struct Location location = parser->location;
+
+  Parser_Expect_Advance (parser, TOKEN_SIZEOF);
+
+  struct Type *type = Parser_Parse_Type (parser);
+
+  struct AST *result;
+
+  result = AST_Create (location, AST_SIZEOF);
+
+  result->type = type;
 
   return result;
 }

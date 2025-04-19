@@ -332,6 +332,16 @@ Type_Structure_As_LLVM (struct Type_Structure structure, LLVMContextRef context)
 }
 
 
+int
+Type_Structure_Sizeof (struct Type_Structure structure)
+{
+  int size = 0;
+  for (size_t i = 0; i < structure.fields_n; ++i)
+    size += Type_Sizeof (structure.fields[i].type);
+  return size;
+}
+
+
 void
 Type_Structure_Diagnostic (struct Type_Structure structure)
 {
@@ -604,6 +614,49 @@ Type_As_LLVM (struct Type *type, LLVMContextRef context)
       return Type_Structure_As_LLVM (type->value.structure, context);
     default:
       assert (0);
+    }
+}
+
+
+int
+Type_Sizeof (struct Type *type)
+{
+  switch (type->kind)
+    {
+    case TYPE_DUMMY:
+      return 0; // Error
+    case TYPE_VOID:
+      return 0; // Warning
+    case TYPE_I8:
+      return 1;
+    case TYPE_I16:
+      return 2;
+    case TYPE_I32:
+      return 4;
+    case TYPE_I64:
+      return 8;
+    case TYPE_U8:
+      return 1;
+    case TYPE_U16:
+      return 2;
+    case TYPE_U32:
+      return 4;
+    case TYPE_U64:
+      return 8;
+    case TYPE_F32:
+      return 4;
+    case TYPE_F64:
+      return 8;
+    case TYPE_BOOL:
+      return 1;
+    case TYPE_FUNCTION:
+      return 8;
+    case TYPE_POINTER:
+      return 8;
+    case TYPE_INITIALIZER:
+      return 0; // Error
+    case TYPE_STRUCTURE:
+      return Type_Structure_Sizeof (type->value.structure);
     }
 }
 
