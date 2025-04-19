@@ -3,66 +3,52 @@ source_filename = "Main"
 target datalayout = "e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-f80:128-n8:16:32:64-S128"
 target triple = "x86_64-pc-linux-gnu"
 
+@str = private unnamed_addr constant [15 x i8] c"Vec2 [%g, %g]\0A\00", align 1
+@str.1 = private unnamed_addr constant [16 x i8] c"*Vec2 [%g, %g]\0A\00", align 1
+@str.2 = private unnamed_addr constant [15 x i8] c"Vec2 [%g, %g]\0A\00", align 1
+@str.3 = private unnamed_addr constant [16 x i8] c"*Vec2 [%g, %g]\0A\00", align 1
+
 declare void @printf(i8*, ...)
-
-declare void @puts(i8*)
-
-declare void* @malloc(i64)
-
-declare void @free(void*)
 
 define void @__main(i32 %argc, i8** %argv) {
 entry:
-  %xs = alloca i64**, align 8
+  %p = alloca { double, double }*, align 8
+  %v = alloca { double, double }, align 8
   %argv2 = alloca i8**, align 8
   %argc1 = alloca i32, align 4
   store i32 %argc, i32* %argc1, align 4
   store i8** %argv, i8*** %argv2, align 8
-  %0 = call void* @malloc(i64 32)
-  %bitcast = bitcast void* %0 to i64**
-  store i64** %bitcast, i64*** %xs, align 8
-  %xs3 = load i64**, i64*** %xs, align 8
-  %gep30 = bitcast i64** %xs3 to i64**
-  %1 = call void* @malloc(i64 32)
-  %ptrtoint = ptrtoint void* %1 to i64
-  store i64 %ptrtoint, i64** %gep30, align 4
-  %xs4 = load i64**, i64*** %xs, align 8
-  %gep5 = getelementptr i64*, i64** %xs4, i64 1
-  %2 = call void* @malloc(i64 32)
-  %ptrtoint6 = ptrtoint void* %2 to i64
-  store i64 %ptrtoint6, i64** %gep5, align 4
-  %xs7 = load i64**, i64*** %xs, align 8
-  %gep8 = getelementptr i64*, i64** %xs7, i64 2
-  %3 = call void* @malloc(i64 32)
-  %ptrtoint9 = ptrtoint void* %3 to i64
-  store i64 %ptrtoint9, i64** %gep8, align 4
-  %xs10 = load i64**, i64*** %xs, align 8
-  %gep11 = getelementptr i64*, i64** %xs10, i64 3
-  %4 = call void* @malloc(i64 32)
-  %ptrtoint12 = ptrtoint void* %4 to i64
-  store i64 %ptrtoint12, i64** %gep11, align 4
-  %xs13 = load i64**, i64*** %xs, align 8
-  %gep1431 = bitcast i64** %xs13 to i64**
-  %deref = load i64*, i64** %gep1431, align 8
-  %bitcast15 = bitcast i64* %deref to void*
-  call void @free(void* %bitcast15)
-  %xs16 = load i64**, i64*** %xs, align 8
-  %gep17 = getelementptr i64*, i64** %xs16, i64 1
-  %deref18 = load i64*, i64** %gep17, align 8
-  %bitcast19 = bitcast i64* %deref18 to void*
-  call void @free(void* %bitcast19)
-  %xs20 = load i64**, i64*** %xs, align 8
-  %gep21 = getelementptr i64*, i64** %xs20, i64 2
-  %deref22 = load i64*, i64** %gep21, align 8
-  %bitcast23 = bitcast i64* %deref22 to void*
-  call void @free(void* %bitcast23)
-  %xs24 = load i64**, i64*** %xs, align 8
-  %gep25 = getelementptr i64*, i64** %xs24, i64 3
-  %deref26 = load i64*, i64** %gep25, align 8
-  %bitcast27 = bitcast i64* %deref26 to void*
-  call void @free(void* %bitcast27)
-  %xs28 = load i64**, i64*** %xs, align 8
-  %bitcast29 = bitcast i64** %xs28 to void*
-  call void @free(void* %bitcast29)
+  store { double, double } { double 1.500000e+00, double 2.500000e+00 }, { double, double }* %v, align 8
+  %field_ptr25 = bitcast { double, double }* %v to double*
+  %field_val = load double, double* %field_ptr25, align 8
+  %field_ptr3 = getelementptr inbounds { double, double }, { double, double }* %v, i32 0, i32 1
+  %field_val4 = load double, double* %field_ptr3, align 8
+  call void (i8*, ...) @printf(i8* getelementptr inbounds ([15 x i8], [15 x i8]* @str, i32 0, i32 0), double %field_val, double %field_val4)
+  store { double, double }* %v, { double, double }** %p, align 8
+  %p5 = load { double, double }*, { double, double }** %p, align 8
+  %field_ptr626 = bitcast { double, double }* %p5 to double*
+  %field_val7 = load double, double* %field_ptr626, align 8
+  %p8 = load { double, double }*, { double, double }** %p, align 8
+  %field_ptr9 = getelementptr inbounds { double, double }, { double, double }* %p8, i32 0, i32 1
+  %field_val10 = load double, double* %field_ptr9, align 8
+  call void (i8*, ...) @printf(i8* getelementptr inbounds ([16 x i8], [16 x i8]* @str.1, i32 0, i32 0), double %field_val7, double %field_val10)
+  %p11 = load { double, double }*, { double, double }** %p, align 8
+  %field_ptr1227 = bitcast { double, double }* %p11 to double*
+  store double 1.000000e+01, double* %field_ptr1227, align 8
+  %p13 = load { double, double }*, { double, double }** %p, align 8
+  %field_ptr14 = getelementptr inbounds { double, double }, { double, double }* %p13, i32 0, i32 1
+  store double 2.000000e+01, double* %field_ptr14, align 8
+  %field_ptr1528 = bitcast { double, double }* %v to double*
+  %field_val16 = load double, double* %field_ptr1528, align 8
+  %field_ptr17 = getelementptr inbounds { double, double }, { double, double }* %v, i32 0, i32 1
+  %field_val18 = load double, double* %field_ptr17, align 8
+  call void (i8*, ...) @printf(i8* getelementptr inbounds ([15 x i8], [15 x i8]* @str.2, i32 0, i32 0), double %field_val16, double %field_val18)
+  %p19 = load { double, double }*, { double, double }** %p, align 8
+  %field_ptr2029 = bitcast { double, double }* %p19 to double*
+  %field_val21 = load double, double* %field_ptr2029, align 8
+  %p22 = load { double, double }*, { double, double }** %p, align 8
+  %field_ptr23 = getelementptr inbounds { double, double }, { double, double }* %p22, i32 0, i32 1
+  %field_val24 = load double, double* %field_ptr23, align 8
+  call void (i8*, ...) @printf(i8* getelementptr inbounds ([16 x i8], [16 x i8]* @str.3, i32 0, i32 0), double %field_val21, double %field_val24)
   ret void
 }

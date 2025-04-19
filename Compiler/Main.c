@@ -57,6 +57,8 @@ main (void)
 
   struct AST *ast = Parser_Parse (&parser);
 
+  printf ("Parser finished.\n");
+
   // fprintf (stderr, "----------------\n");
   // AST_Diagnostic (ast);
   // fprintf (stderr, "----------------\n");
@@ -80,11 +82,15 @@ main (void)
 
   Resolver_Resolve (ast, type_scope);
 
+  printf ("Resolver finished.\n");
+
   // fprintf (stderr, "----------------\n");
   // AST_Diagnostic (ast);
   // fprintf (stderr, "----------------\n");
 
   Checker_Check (ast);
+
+  printf ("Type checker finished.\n");
 
   struct CG *cg = CG_Create ();
 
@@ -93,6 +99,8 @@ main (void)
   cg_scope = Scope_Create (NULL);
 
   CG_Generate (cg, ast, cg_scope);
+
+  printf ("Code generator finished.\n");
 
   // ASDASD
 
@@ -146,77 +154,13 @@ main (void)
   LLVMDisposeMessage (triple);
  
   // ASDASD
-
-  /*
-  char *error = NULL;
-  LLVMPrintModuleToFile (cg->module, "Tests/Main.ll", &error);
-
- char *triple = LLVMGetDefaultTargetTriple();
-
-  LLVMTargetRef target;
-  if (LLVMGetTargetFromTriple(triple, &target, &error) != 0) {
-      fprintf(stderr, "Error getting target: %s\n", error);
-      LLVMDisposeMessage(error);
-      exit(1);
-  }
-
-  // Create target machine
-  LLVMTargetMachineRef target_machine = LLVMCreateTargetMachine(
-      target,
-      triple,
-      "",     // CPU
-      "",     // Features
-      LLVMCodeGenLevelDefault,
-      LLVMRelocPIC,
-      LLVMCodeModelDefault
-  );
-
-  // Set triple and datalayout on module
-  LLVMSetTarget(cg->module, triple);
-
-  LLVMTargetDataRef data_layout = LLVMCreateTargetDataLayout(target_machine);
-  char *layout_str = LLVMCopyStringRepOfTargetData(data_layout);
-  LLVMSetDataLayout(cg->module, layout_str);
-  LLVMDisposeMessage(layout_str);
-
-  // Verify module (optional but useful)
-  if (LLVMVerifyModule(cg->module, LLVMAbortProcessAction, &error) != 0) {
-      fprintf(stderr, "Module verification failed: %s\n", error);
-      LLVMDisposeMessage(error);
-      exit(1);
-  }
-
-  LLVMDisposeMessage(error);
-
-  // Emit object file
-  if (LLVMTargetMachineEmitToFile(
-          target_machine,
-          cg->module,
-          "Tests/Main.o",
-          LLVMObjectFile,
-          &error) != 0) {
-      fprintf(stderr, "Error emitting object file: %s\n", error);
-      LLVMDisposeMessage(error);
-      exit(1);
-  }
-
-  if (LLVMTargetMachineEmitToFile(
-        target_machine,
-          cg->module,
-          "Tests/Main.s",
-        LLVMAssemblyFile,
-        &error) != 0) {
-    fprintf(stderr, "Error emitting assembly file: %s\n", error);
-    LLVMDisposeMessage(error);
-    exit(1);
-  }
-
-  LLVMDumpModule (cg->module);
-  */
-
   CG_Destroy (cg);
 
   Scope_Destroy_Value (cg_scope);
+
+
+
+
   Scope_Destroy_Type (type_scope);
 
   AST_Destroy (ast);

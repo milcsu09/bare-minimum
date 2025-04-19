@@ -2,6 +2,7 @@
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 struct Type *
 Resolver_Resolve_Type (struct Type *type, struct Scope *scope)
@@ -46,9 +47,29 @@ Resolver_Resolve_Type (struct Type *type, struct Scope *scope)
     case TYPE_POINTER:
       return Type_Create_Pointer (
           Resolver_Resolve_Type (type->value.base, scope));
+    case TYPE_STRUCTURE:
+      {
+        struct Type_Structure structure = type->value.structure;
+
+        struct Type_Field *fields = calloc (structure.fields_n,
+                                            sizeof (struct Type_Field));
+
+        for (size_t i = 0; i < structure.fields_n; ++i)
+          {
+            struct Type *type = Resolver_Resolve_Type (structure.fields[i].type,
+                                                       scope);
+            fields[i] = Type_Field_Create (structure.fields[i].name, type);
+          }
+
+        struct Type_Structure copy;
+        copy = Type_Structure_Create (structure.fields_n, fields);
+
+        free (fields);
+
+        return Type_Create_Structure (copy);
+      }
     default:
-      // Should be unreachable.
-      assert (0);
+      return Type_Copy (type);
     }
 }
 
@@ -74,6 +95,8 @@ void Resolver_Resolve_Binary (struct AST *, struct Scope *);
 
 void Resolver_Resolve_Cast (struct AST *, struct Scope *);
 
+void Resolver_Resolve_Access (struct AST *, struct Scope *);
+
 void Resolver_Resolve_Compound (struct AST *, struct Scope *);
 
 void Resolver_Resolve_Identifier (struct AST *, struct Scope *);
@@ -85,6 +108,8 @@ void Resolver_Resolve_I64 (struct AST *, struct Scope *);
 void Resolver_Resolve_F64 (struct AST *, struct Scope *);
 
 void Resolver_Resolve_String (struct AST *, struct Scope *);
+
+void Resolver_Resolve_Initializer (struct AST *, struct Scope *);
 
 void
 Resolver_Resolve_Program (struct AST *ast, struct Scope *scope)
@@ -237,9 +262,6 @@ Resolver_Resolve_Defer (struct AST *ast, struct Scope *scope)
 void
 Resolver_Resolve_Variable (struct AST *ast, struct Scope *scope)
 {
-  if (ast->child)
-    Resolver_Resolve (ast->child, scope);
-
   if (ast->type)
     {
       AST_Switch_Type (ast, Resolver_Resolve_Type (ast->type, scope));
@@ -257,7 +279,13 @@ Resolver_Resolve_Variable (struct AST *ast, struct Scope *scope)
           ast->child = cast;
         }
     }
-  else
+
+  if (ast->child)
+    {
+      Resolver_Resolve (ast->child, scope);
+    }
+
+  if (!ast->type)
     {
       ast->type = Type_Copy (ast->child->type);
     }
@@ -334,7 +362,8 @@ Resolver_Resolve_Unary (struct AST *ast, struct Scope *scope)
       type = Type_Create_Pointer (Type_Copy (ast->child->type));
       break;
     case TOKEN_STAR:
-      if (ast->child->type->kind != TYPE_POINTER)
+      // if (ast->child->type->kind != TYPE_POINTER)
+      if (!AST_Is_LV (ast->child))
         {
           Diagnostic (ast->location, D_ERROR, "cannot dereference right-value");
           Halt ();
@@ -352,14 +381,14 @@ Resolver_Resolve_Unary (struct AST *ast, struct Scope *scope)
 void
 Resolver_Resolve_Binary (struct AST *ast, struct Scope *scope)
 {
+  enum Token_Kind operator = ast->token.kind;
   Resolver_Resolve (ast->child, scope);
-  Resolver_Resolve (ast->child->next, scope);
 
   struct AST *cast;
 
   cast = AST_Create (ast->child->next->location, AST_CAST);
 
-  if (ast->child->type->kind == TYPE_POINTER)
+  if (ast->child->type->kind == TYPE_POINTER && operator != TOKEN_EQUALS)
     cast->type = Type_Create (TYPE_I64);
   else
     cast->type = Type_Copy (ast->child->type);
@@ -368,7 +397,9 @@ Resolver_Resolve_Binary (struct AST *ast, struct Scope *scope)
 
   ast->child->next = cast;
 
-  switch (ast->token.kind)
+  Resolver_Resolve (ast->child->next, scope);
+
+  switch (operator)
     {
     case TOKEN_EQUALS:
     case TOKEN_PLUS:
@@ -394,8 +425,54 @@ void
 Resolver_Resolve_Cast (struct AST *ast, struct Scope *scope)
 {
   AST_Switch_Type (ast, Resolver_Resolve_Type (ast->type, scope));
+
+  if (ast->type->kind == TYPE_STRUCTURE && ast->child->kind == AST_INITIALIZER)
+    AST_Switch_Type (ast->child, Type_Copy (ast->type));
+
   Resolver_Resolve (ast->child, scope);
 }
+
+
+void
+Resolver_Resolve_Access (struct AST *ast, struct Scope *scope)
+{
+  Resolver_Resolve (ast->child, scope);
+
+  if (!AST_Is_LV (ast->child))
+    {
+      Diagnostic (ast->location, D_ERROR, "cannot access right-value");
+      Halt ();
+    }
+
+  if (ast->child->type->kind != TYPE_STRUCTURE)
+    {
+      Diagnostic (ast->location, D_ERROR, "cannot access non-structure");
+      Halt ();
+    }
+
+  struct Type_Structure structure = ast->child->type->value.structure;
+
+  const char *name = ast->token.value.s;
+
+  int found = 0;
+  for (size_t i = 0; i < structure.fields_n; ++i)
+    {
+      if (strcmp (name, structure.fields[i].name) != 0)
+        continue;
+
+      found = 1;
+      ast->state = i;
+      AST_Switch_Type (ast, Type_Copy (structure.fields[i].type));
+    }
+
+  if (!found)
+    {
+      Diagnostic (ast->token.location, D_ERROR,
+                  "undefined structure field '%s'", name);
+      Halt ();
+    }
+}
+
 
 void
 Resolver_Resolve_Compound (struct AST *ast, struct Scope *scope)
@@ -484,6 +561,8 @@ Resolver_Resolve_Call (struct AST *ast, struct Scope *scope)
           cast->type = Type_Copy (type);
           cast->child = current;
           cast->next = NULL;
+
+          Resolver_Resolve (cast, scope);
         }
       else if (function.variadic)
         {
@@ -545,6 +624,86 @@ Resolver_Resolve_String (struct AST *ast, struct Scope *scope)
 }
 
 void
+Resolver_Resolve_Initializer (struct AST *ast, struct Scope *scope)
+{
+  (void)scope;
+
+  if (ast->type == NULL)
+    {
+      ast->type = Type_Create (TYPE_INITIALIZER);
+
+      struct AST *current = ast->child;
+
+      while (current)
+        {
+          Resolver_Resolve (current, scope);
+          current = current->next;
+        }
+    }
+  else
+    {
+      struct Type_Structure structure = ast->type->value.structure;
+
+      struct AST *current = ast->child;
+      struct AST *new_head = NULL;
+      struct AST *last_cast = NULL;
+
+      size_t i = 0;
+
+      while (current)
+        {
+          struct AST *next = current->next;
+
+          Resolver_Resolve (current, scope);
+
+          struct AST *cast = NULL;
+
+          if (i < structure.fields_n)
+            {
+              struct Type *type = structure.fields[i].type;
+
+              cast = AST_Create (current->location, AST_CAST);
+              cast->type = Type_Copy (type);
+              cast->child = current;
+              cast->next = NULL;
+
+              Resolver_Resolve (cast, scope);
+            }
+          else
+            {
+              Diagnostic (current->location, D_ERROR,
+                          "too many initalizer-fields supplied");
+              Halt ();
+            }
+
+          current->next = NULL;
+
+          if (!new_head)
+            {
+              new_head = cast;
+            }
+          else
+            {
+              last_cast->next = cast;
+            }
+
+          last_cast = cast;
+          ++i;
+          current = next;
+        }
+
+      if (i < structure.fields_n)
+        {
+          Diagnostic (ast->location, D_ERROR,
+                      "not enough initalizer-fields supplied");
+          Halt ();
+        }
+
+      ast->child = new_head;
+    }
+}
+
+void
 Resolver_Resolve (struct AST *ast, struct Scope *scope)
 {
   switch (ast->kind)
@@ -587,6 +746,9 @@ Resolver_Resolve (struct AST *ast, struct Scope *scope)
       Resolver_Resolve_Cast (ast, scope);
       break;
 
+    case AST_ACCESS:
+      Resolver_Resolve_Access (ast, scope);
+      break;
     case AST_COMPOUND:
       Resolver_Resolve_Compound (ast, scope);
       break;
@@ -604,6 +766,9 @@ Resolver_Resolve (struct AST *ast, struct Scope *scope)
       break;
     case AST_STRING:
       Resolver_Resolve_String (ast, scope);
+      break;
+    case AST_INITIALIZER:
+      Resolver_Resolve_Initializer (ast, scope);
       break;
     }
 }

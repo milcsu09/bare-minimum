@@ -1,12 +1,11 @@
 #include "CG.h"
-#include <llvm-c/Core.h>
-#include <llvm-c-14/llvm-c/Types.h>
-#include <llvm-c/Transforms/Scalar.h>
 #include <assert.h>
+#include <llvm-c-14/llvm-c/Types.h>
+#include <llvm-c/Core.h>
+#include <llvm-c/Transforms/Scalar.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
 
 struct CG *
 CG_Create ()
@@ -22,18 +21,18 @@ CG_Create ()
   cg->pass = LLVMCreateFunctionPassManagerForModule (cg->module);
   LLVMAddPromoteMemoryToRegisterPass (cg->pass);
 
-  LLVMAddInstructionCombiningPass(cg->pass);
-  LLVMAddReassociatePass(cg->pass);
-  LLVMAddGVNPass(cg->pass);
-  LLVMAddCFGSimplificationPass(cg->pass);
-  LLVMAddDeadStoreEliminationPass(cg->pass);
+  LLVMAddInstructionCombiningPass (cg->pass);
+  LLVMAddReassociatePass (cg->pass);
+  LLVMAddGVNPass (cg->pass);
+  LLVMAddCFGSimplificationPass (cg->pass);
+  LLVMAddDeadStoreEliminationPass (cg->pass);
 
-  LLVMAddScalarReplAggregatesPass(cg->pass);
-  LLVMAddEarlyCSEPass(cg->pass);
-  LLVMAddTailCallEliminationPass(cg->pass);
-  LLVMAddLoopRotatePass(cg->pass);
-  LLVMAddLICMPass(cg->pass);
-  LLVMAddLoopUnrollPass(cg->pass);
+  LLVMAddScalarReplAggregatesPass (cg->pass);
+  LLVMAddEarlyCSEPass (cg->pass);
+  LLVMAddTailCallEliminationPass (cg->pass);
+  LLVMAddLoopRotatePass (cg->pass);
+  LLVMAddLICMPass (cg->pass);
+  LLVMAddLoopUnrollPass (cg->pass);
 
   LLVMInitializeFunctionPassManager (cg->pass);
 
@@ -41,7 +40,6 @@ CG_Create ()
 
   return cg;
 }
-
 
 void
 CG_Destroy (struct CG *cg)
@@ -53,9 +51,8 @@ CG_Destroy (struct CG *cg)
   free (cg);
 }
 
-
 LLVMValueRef
-CG_Generate_Alloca (struct CG* cg, const char *name, LLVMTypeRef type)
+CG_Generate_Alloca (struct CG *cg, const char *name, LLVMTypeRef type)
 {
   LLVMBasicBlockRef entry = LLVMGetEntryBasicBlock (cg->function);
   LLVMValueRef first = LLVMGetFirstInstruction (entry);
@@ -74,9 +71,8 @@ CG_Generate_Alloca (struct CG* cg, const char *name, LLVMTypeRef type)
   return alloca;
 }
 
-
 LLVMValueRef
-CG_Generate_LValue(struct CG *cg, struct AST *ast, struct Scope *scope)
+CG_Generate_LValue (struct CG *cg, struct AST *ast, struct Scope *scope)
 {
   switch (ast->kind)
     {
@@ -100,17 +96,24 @@ CG_Generate_LValue(struct CG *cg, struct AST *ast, struct Scope *scope)
         {
         case TOKEN_STAR:
           {
-            LLVMValueRef ptr = CG_Generate(cg, ast->child, scope);
+            LLVMValueRef ptr = CG_Generate (cg, ast->child, scope);
             return ptr;
           }
         default:
           return NULL;
         }
+    case AST_ACCESS:
+      {
+        LLVMValueRef s = CG_Generate_LValue (cg, ast->child, scope);
+
+        return LLVMBuildStructGEP2 (
+            cg->builder, Type_As_LLVM (ast->child->type, cg->context), s,
+            ast->state, "field_ptr");
+      }
     default:
       return NULL;
     }
 }
-
 
 LLVMValueRef CG_Generate_Program (struct CG *, struct AST *, struct Scope *);
 
@@ -132,6 +135,8 @@ LLVMValueRef CG_Generate_Binary (struct CG *, struct AST *, struct Scope *);
 
 LLVMValueRef CG_Generate_Cast (struct CG *, struct AST *, struct Scope *);
 
+LLVMValueRef CG_Generate_Access (struct CG *, struct AST *, struct Scope *);
+
 LLVMValueRef CG_Generate_Compound (struct CG *, struct AST *, struct Scope *);
 
 LLVMValueRef CG_Generate_Identifier (struct CG *, struct AST *, struct Scope *);
@@ -144,6 +149,8 @@ LLVMValueRef CG_Generate_F64 (struct CG *, struct AST *, struct Scope *);
 
 LLVMValueRef CG_Generate_String (struct CG *, struct AST *, struct Scope *);
 
+LLVMValueRef CG_Generate_Initializer (struct CG *, struct AST *,
+                                      struct Scope *);
 
 LLVMValueRef
 CG_Generate_Program (struct CG *cg, struct AST *ast, struct Scope *scope)
@@ -164,7 +171,6 @@ CG_Generate_Program (struct CG *cg, struct AST *ast, struct Scope *scope)
 
   return NULL;
 }
-
 
 LLVMValueRef
 CG_Generate_Prototype (struct CG *cg, struct AST *ast, struct Scope *scope)
@@ -190,7 +196,6 @@ CG_Generate_Prototype (struct CG *cg, struct AST *ast, struct Scope *scope)
   return function;
 }
 
-
 LLVMValueRef
 CG_Generate_Function (struct CG *cg, struct AST *ast, struct Scope *scope)
 {
@@ -208,8 +213,8 @@ CG_Generate_Function (struct CG *cg, struct AST *ast, struct Scope *scope)
 
   child = Scope_Create (scope);
 
-  LLVMBasicBlockRef bb = LLVMAppendBasicBlockInContext (cg->context, function,
-                                                        "entry");
+  LLVMBasicBlockRef bb
+      = LLVMAppendBasicBlockInContext (cg->context, function, "entry");
   LLVMPositionBuilderAtEnd (cg->builder, bb);
 
   size_t i = 0;
@@ -218,8 +223,8 @@ CG_Generate_Function (struct CG *cg, struct AST *ast, struct Scope *scope)
        argument = LLVMGetNextParam (argument), ++i)
     {
       const char *name = LLVMGetValueName (argument);
-      LLVMTypeRef type = Type_As_LLVM (ast->type->value.function.in[i],
-                                       cg->context);
+      LLVMTypeRef type
+          = Type_As_LLVM (ast->type->value.function.in[i], cg->context);
 
       LLVMValueRef alloca = CG_Generate_Alloca (cg, name, type);
 
@@ -243,7 +248,6 @@ CG_Generate_Function (struct CG *cg, struct AST *ast, struct Scope *scope)
   return function;
 }
 
-
 LLVMValueRef
 CG_Generate_Variable (struct CG *cg, struct AST *ast, struct Scope *scope)
 {
@@ -261,7 +265,6 @@ CG_Generate_Variable (struct CG *cg, struct AST *ast, struct Scope *scope)
 
   return alloca;
 }
-
 
 LLVMValueRef
 CG_Generate_If (struct CG *cg, struct AST *ast, struct Scope *scope)
@@ -291,7 +294,6 @@ CG_Generate_If (struct CG *cg, struct AST *ast, struct Scope *scope)
 
   return NULL;
 }
-
 
 LLVMValueRef
 CG_Generate_While (struct CG *cg, struct AST *ast, struct Scope *scope)
@@ -324,9 +326,9 @@ CG_Generate_While (struct CG *cg, struct AST *ast, struct Scope *scope)
 LLVMValueRef
 CG_Generate_Unary (struct CG *cg, struct AST *ast, struct Scope *scope)
 {
-  enum Token_Kind operator = ast->token.kind;
+  enum Token_Kind operator= ast->token.kind;
 
-  if (operator == TOKEN_AMPERSAND)
+  if (operator== TOKEN_AMPERSAND)
     return CG_Generate_LValue (cg, ast->child, scope);
 
   LLVMValueRef value = CG_Generate (cg, ast->child, scope);
@@ -334,7 +336,7 @@ CG_Generate_Unary (struct CG *cg, struct AST *ast, struct Scope *scope)
   struct Type *t1 = ast->child->type;
   enum Type_Kind k1 = t1->kind;
 
-  if (operator == TOKEN_STAR)
+  if (operator== TOKEN_STAR)
     {
       LLVMTypeRef type = Type_As_LLVM (t1->value.base, cg->context);
       return LLVMBuildLoad2 (cg->builder, type, value, "deref");
@@ -363,15 +365,14 @@ CG_Generate_Unary (struct CG *cg, struct AST *ast, struct Scope *scope)
       }
 
   return NULL;
-
 }
 
 LLVMValueRef
 CG_Generate_Binary (struct CG *cg, struct AST *ast, struct Scope *scope)
 {
-  enum Token_Kind operator = ast->token.kind;
+  enum Token_Kind operator= ast->token.kind;
 
-  if (operator == TOKEN_EQUALS)
+  if (operator== TOKEN_EQUALS)
     {
       LLVMValueRef ptr = CG_Generate_LValue (cg, ast->child, scope);
 
@@ -401,10 +402,9 @@ CG_Generate_Binary (struct CG *cg, struct AST *ast, struct Scope *scope)
             LLVMValueRef indices[] = { right };
 
             // Handle *Void as bytes.
-            LLVMTypeRef type =
-                t1->value.base->kind == TYPE_VOID
-                ? LLVMInt8Type()
-                : Type_As_LLVM (t1->value.base, cg->context);
+            LLVMTypeRef type = t1->value.base->kind == TYPE_VOID
+                                   ? LLVMInt8Type ()
+                                   : Type_As_LLVM (t1->value.base, cg->context);
 
             return LLVMBuildGEP2 (cg->builder, type, left, indices, 1, "gep");
           }
@@ -470,7 +470,6 @@ CG_Generate_Binary (struct CG *cg, struct AST *ast, struct Scope *scope)
   return NULL;
 }
 
-
 LLVMValueRef
 CG_Generate_Cast (struct CG *cg, struct AST *ast, struct Scope *scope)
 {
@@ -496,8 +495,8 @@ CG_Generate_Cast (struct CG *cg, struct AST *ast, struct Scope *scope)
 
       if (w1 < w2)
         return Type_Kind_Is_Signed (k1)
-          ? LLVMBuildSExt (cg->builder, value, type, "sext")
-          : LLVMBuildZExt (cg->builder, value, type, "zext");
+                   ? LLVMBuildSExt (cg->builder, value, type, "sext")
+                   : LLVMBuildZExt (cg->builder, value, type, "zext");
       else if (w1 > w2)
         return LLVMBuildTrunc (cg->builder, value, type, "trunc");
       else
@@ -507,14 +506,14 @@ CG_Generate_Cast (struct CG *cg, struct AST *ast, struct Scope *scope)
   // Integer -> Float
   if (Type_Kind_Is_Integer (k1) && Type_Kind_Is_Float (k2))
     return Type_Kind_Is_Signed (k1)
-      ? LLVMBuildSIToFP (cg->builder, value, type, "sitofp")
-      : LLVMBuildUIToFP (cg->builder, value, type, "uitofp");
+               ? LLVMBuildSIToFP (cg->builder, value, type, "sitofp")
+               : LLVMBuildUIToFP (cg->builder, value, type, "uitofp");
 
   // Float -> Integer
   if (Type_Kind_Is_Float (k1) && Type_Kind_Is_Integer (k2))
     return Type_Kind_Is_Signed (k2)
-      ? LLVMBuildFPToSI (cg->builder, value, type, "fptosi")
-      : LLVMBuildFPToUI (cg->builder, value, type, "fptoui");
+               ? LLVMBuildFPToSI (cg->builder, value, type, "fptosi")
+               : LLVMBuildFPToUI (cg->builder, value, type, "fptoui");
 
   // Float <-> Float
   if (Type_Kind_Is_Float (k1) && Type_Kind_Is_Float (k2))
@@ -539,23 +538,36 @@ CG_Generate_Cast (struct CG *cg, struct AST *ast, struct Scope *scope)
   if (k2 == TYPE_BOOL)
     {
       if (Type_Kind_Is_Integer (k1))
-        return LLVMBuildICmp(cg->builder, LLVMIntNE, value, LLVMConstInt(Type_As_LLVM (t1, cg->context), 0, 0), "int_to_bool");
+        return LLVMBuildICmp (
+            cg->builder, LLVMIntNE, value,
+            LLVMConstInt (Type_As_LLVM (t1, cg->context), 0, 0), "int_to_bool");
       if (Type_Kind_Is_Float (k1))
-        return LLVMBuildFCmp(cg->builder, LLVMRealUNE, value, LLVMConstReal(Type_As_LLVM (t1, cg->context), 0.0), "fp_to_bool");
+        return LLVMBuildFCmp (
+            cg->builder, LLVMRealUNE, value,
+            LLVMConstReal (Type_As_LLVM (t1, cg->context), 0.0), "fp_to_bool");
     }
 
   if (k1 == TYPE_POINTER && k2 == TYPE_POINTER)
-    return LLVMBuildBitCast(cg->builder, value, type, "bitcast");
+    return LLVMBuildBitCast (cg->builder, value, type, "bitcast");
 
   if (k1 == TYPE_POINTER && Type_Kind_Is_Integer (k2))
     return LLVMBuildPtrToInt (cg->builder, value, type, "ptrtoint");
 
-  assert (0);
-
-  // printf ("IMPLEMENT CASTING HERE\n");
-  // assert (0);
+  Diagnostic (ast->location, D_ERROR, "no cast defined between '%s' and '%s'",
+              Type_Kind_String (k1), Type_Kind_String (k2));
+  Halt ();
 }
 
+LLVMValueRef
+CG_Generate_Access (struct CG *cg, struct AST *ast, struct Scope *scope)
+{
+  LLVMValueRef ptr = CG_Generate_LValue (cg, ast, scope);
+
+  LLVMValueRef value = LLVMBuildLoad2 (
+      cg->builder, Type_As_LLVM (ast->type, cg->context), ptr, "field_val");
+
+  return value;
+}
 
 LLVMValueRef
 CG_Generate_Compound (struct CG *cg, struct AST *ast, struct Scope *scope)
@@ -601,7 +613,6 @@ CG_Generate_Compound (struct CG *cg, struct AST *ast, struct Scope *scope)
   return result;
 }
 
-
 LLVMValueRef
 CG_Generate_Identifier (struct CG *cg, struct AST *ast, struct Scope *scope)
 {
@@ -617,7 +628,6 @@ CG_Generate_Identifier (struct CG *cg, struct AST *ast, struct Scope *scope)
 
   return LLVMBuildLoad2 (cg->builder, type, value, name);
 }
-
 
 LLVMValueRef
 CG_Generate_Call (struct CG *cg, struct AST *ast, struct Scope *scope)
@@ -652,37 +662,58 @@ CG_Generate_Call (struct CG *cg, struct AST *ast, struct Scope *scope)
       i++;
     }
 
-  return LLVMBuildCall2 (cg->builder, type, function, arguments, n,
-                         "");
+  return LLVMBuildCall2 (cg->builder, type, function, arguments, n, "");
 }
-
 
 LLVMValueRef
 CG_Generate_I64 (struct CG *cg, struct AST *ast, struct Scope *scope)
 {
   (void)scope;
-  return LLVMConstInt(Type_As_LLVM (ast->type, cg->context),
-                      ast->token.value.i64, 0);
+  return LLVMConstInt (Type_As_LLVM (ast->type, cg->context),
+                       ast->token.value.i64, 0);
 }
-
 
 LLVMValueRef
 CG_Generate_F64 (struct CG *cg, struct AST *ast, struct Scope *scope)
 {
   (void)scope;
-  return LLVMConstReal(Type_As_LLVM (ast->type, cg->context),
-                       ast->token.value.f64);
+  return LLVMConstReal (Type_As_LLVM (ast->type, cg->context),
+                        ast->token.value.f64);
 }
-
 
 LLVMValueRef
 CG_Generate_String (struct CG *cg, struct AST *ast, struct Scope *scope)
 {
   (void)scope;
   const char *string = ast->token.value.s;
-  LLVMValueRef str = LLVMBuildGlobalStringPtr(cg->builder, string, "str");
+  LLVMValueRef str = LLVMBuildGlobalStringPtr (cg->builder, string, "str");
   // LLVMValueRef globalStr = LLVMGetNamedGlobal(cg->module, "str");
   return str;
+}
+
+LLVMValueRef
+CG_Generate_Initializer (struct CG *cg, struct AST *ast, struct Scope *scope)
+{
+  if (ast->type->kind == TYPE_STRUCTURE)
+    {
+      struct Type_Structure structure = ast->type->value.structure;
+
+      struct AST *current = ast->child;
+
+      LLVMTypeRef struct_type = Type_As_LLVM (ast->type, cg->context);
+      LLVMValueRef result = LLVMGetUndef (struct_type);
+
+      for (size_t i = 0; i < structure.fields_n; ++i)
+        {
+          LLVMValueRef val = CG_Generate (cg, current, scope);
+          result = LLVMBuildInsertValue (cg->builder, result, val, i, "insert");
+          current = current->next;
+        }
+
+      return result;
+    }
+
+  assert (0);
 }
 
 LLVMValueRef
@@ -718,6 +749,8 @@ CG_Generate (struct CG *cg, struct AST *ast, struct Scope *scope)
     case AST_CAST:
       return CG_Generate_Cast (cg, ast, scope);
 
+    case AST_ACCESS:
+      return CG_Generate_Access (cg, ast, scope);
     case AST_COMPOUND:
       return CG_Generate_Compound (cg, ast, scope);
     case AST_IDENTIFIER:
@@ -730,7 +763,8 @@ CG_Generate (struct CG *cg, struct AST *ast, struct Scope *scope)
       return CG_Generate_F64 (cg, ast, scope);
     case AST_STRING:
       return CG_Generate_String (cg, ast, scope);
+    case AST_INITIALIZER:
+      return CG_Generate_Initializer (cg, ast, scope);
     }
 }
-
 

@@ -24,6 +24,8 @@ struct Type *Checker_Check_Binary (struct AST *);
 
 struct Type *Checker_Check_Cast (struct AST *);
 
+struct Type *Checker_Check_Access (struct AST *);
+
 struct Type *Checker_Check_Compound (struct AST *);
 
 struct Type *Checker_Check_Identifier (struct AST *);
@@ -35,6 +37,8 @@ struct Type *Checker_Check_I64 (struct AST *);
 struct Type *Checker_Check_F64 (struct AST *);
 
 struct Type *Checker_Check_String (struct AST *);
+
+struct Type *Checker_Check_Initializer (struct AST *);
 
 
 struct Type *
@@ -121,6 +125,7 @@ Checker_Check_While (struct AST *ast)
   return NULL;
 }
 
+
 struct Type *
 Checker_Check_Unary (struct AST *ast)
 {
@@ -140,6 +145,7 @@ Checker_Check_Unary (struct AST *ast)
 
   return ast->type;
 }
+
 
 struct Type *
 Checker_Check_Binary (struct AST *ast)
@@ -178,6 +184,14 @@ Checker_Check_Cast (struct AST *ast)
       Halt ();
     }
 
+  return ast->type;
+}
+
+
+struct Type *
+Checker_Check_Access (struct AST *ast)
+{
+  Checker_Check (ast->child);
   return ast->type;
 }
 
@@ -248,8 +262,31 @@ Checker_Check_String (struct AST *ast)
 
 
 struct Type *
+Checker_Check_Initializer (struct AST *ast)
+{
+  if (ast->type->kind == TYPE_INITIALIZER)
+    {
+      Diagnostic (ast->location, D_ERROR,
+                  "cannot infer type of initializer-list");
+      Halt ();
+    }
+
+  struct AST *current = ast->child;
+
+  while (current)
+    {
+      Checker_Check (current);
+      current = current->next;
+    }
+
+  return ast->type;
+}
+
+
+struct Type *
 Checker_Check (struct AST *ast)
 {
+  // printf ("%s\n", AST_Kind_String (ast->kind));
   switch (ast->kind)
     {
     case AST_PROGRAM:
@@ -280,6 +317,8 @@ Checker_Check (struct AST *ast)
     case AST_CAST:
       return Checker_Check_Cast (ast);
 
+    case AST_ACCESS:
+      return Checker_Check_Access (ast);
     case AST_COMPOUND:
       return Checker_Check_Compound (ast);
     case AST_IDENTIFIER:
@@ -292,6 +331,8 @@ Checker_Check (struct AST *ast)
       return Checker_Check_F64 (ast);
     case AST_STRING:
       return Checker_Check_String (ast);
+    case AST_INITIALIZER:
+      return Checker_Check_Initializer (ast);
     }
 }
 

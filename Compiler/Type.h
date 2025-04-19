@@ -24,6 +24,8 @@ enum Type_Kind
   TYPE_BOOL,
   TYPE_FUNCTION,
   TYPE_POINTER,
+  TYPE_INITIALIZER,
+  TYPE_STRUCTURE,
 };
 
 
@@ -61,11 +63,50 @@ LLVMTypeRef Type_Function_As_LLVM (struct Type_Function, LLVMContextRef);
 void Type_Function_Diagnostic (struct Type_Function);
 
 
+struct Type_Field
+{
+  const char *name;
+  struct Type *type;
+};
+
+
+struct Type_Field Type_Field_Create (const char *, struct Type *);
+
+struct Type_Field Type_Field_Copy (struct Type_Field);
+
+void Type_Field_Destroy (struct Type_Field);
+
+int Type_Field_Match (struct Type_Field, struct Type_Field);
+
+void Type_Field_Diagnostic (struct Type_Field);
+
+
+struct Type_Structure
+{
+  size_t fields_n;
+  struct Type_Field *fields;
+};
+
+
+struct Type_Structure Type_Structure_Create (size_t, struct Type_Field *);
+
+struct Type_Structure Type_Structure_Copy (struct Type_Structure);
+
+void Type_Structure_Destroy (struct Type_Structure);
+
+int Type_Structure_Match (struct Type_Structure, struct Type_Structure);
+
+LLVMTypeRef Type_Structure_As_LLVM (struct Type_Structure, LLVMContextRef);
+
+void Type_Structure_Diagnostic (struct Type_Structure);
+
+
 union Type_Value
 {
   struct Token dummy;
   struct Type *base;
   struct Type_Function function;
+  struct Type_Structure structure;
 };
 
 
@@ -83,6 +124,8 @@ struct Type *Type_Create_Dummy (struct Token);
 struct Type *Type_Create_Function (struct Type_Function);
 
 struct Type *Type_Create_Pointer (struct Type *);
+
+struct Type *Type_Create_Structure (struct Type_Structure);
 
 struct Type *Type_Copy (struct Type *);
 

@@ -154,6 +154,57 @@ Parser_Parse_Type (struct Parser *parser)
         return Type_Create_Pointer (base);
       }
       break;
+    case TOKEN_LBRACKET:
+      {
+        Parser_Advance (parser);
+
+        struct Type_Field *fields;
+        size_t fields_capacity = 4;
+        size_t fields_n = 0;
+
+        fields = calloc (fields_capacity, sizeof (struct Type_Field));
+
+        while (1)
+          {
+            Parser_Expect (parser, TOKEN_IDENTIFIER);
+            const char *name = parser->current.value.s;
+            Parser_Advance (parser);
+
+            Parser_Expect_Advance (parser, TOKEN_COLON);
+
+            struct Type *type;
+
+            type = Parser_Parse_Type (parser);
+
+            if (fields_n >= fields_capacity)
+              {
+                fields_capacity *= 2;
+                fields = realloc (fields,
+                                  fields_capacity * sizeof (struct Type *));
+              }
+
+            fields[fields_n++] = Type_Field_Create (name, type);
+
+            if (Parser_Match (parser, TOKEN_RBRACKET))
+              break;
+
+            if (!Parser_Match (parser, TOKEN_COMMA))
+              Parser_Expect (parser, TOKEN_RBRACKET);
+            else
+              Parser_Advance (parser);
+          }
+
+        Parser_Expect_Advance (parser, TOKEN_RBRACKET);
+
+        struct Type_Structure structure;
+
+        structure = Type_Structure_Create (fields_n, fields);
+
+        free (fields);
+
+        return Type_Create_Structure (structure);
+      }
+      break;
     default:
       return Parser_Parse_Type_Primary (parser);
     }
@@ -200,6 +251,8 @@ struct AST *Parser_Parse_Primary_Expression (struct Parser *);
 
 struct AST *Parser_Parse_Call_Expression (struct Parser *);
 
+struct AST *Parser_Parse_Access_Expression (struct Parser *);
+
 struct AST *Parser_Parse_Atom_Expression (struct Parser *);
 
 struct AST *Parser_Parse_Group_Expression (struct Parser *);
@@ -209,6 +262,8 @@ struct AST *Parser_Parse_Compound_Expression (struct Parser *);
 struct AST *Parser_Parse_Number (struct Parser *);
 
 struct AST *Parser_Parse_String (struct Parser *);
+
+struct AST *Parser_Parse_Initializer (struct Parser *);
 
 
 struct AST *
@@ -655,7 +710,7 @@ Parser_Parse_Call_Expression (struct Parser *parser)
 {
   struct AST *atom;
 
-  atom = Parser_Parse_Atom_Expression (parser);
+  atom = Parser_Parse_Access_Expression (parser);
 
   if (!Parser_Match (parser, TOKEN_LPAREN))
     return atom;
@@ -689,6 +744,37 @@ Parser_Parse_Call_Expression (struct Parser *parser)
   Parser_Expect_Advance (parser, TOKEN_RPAREN);
 
   return result;
+}
+
+
+struct AST *
+Parser_Parse_Access_Expression (struct Parser *parser)
+{
+  struct AST *expression;
+
+  expression = Parser_Parse_Atom_Expression (parser);
+
+  if (!Parser_Match (parser, TOKEN_DOT))
+    return expression;
+
+  while (Parser_Match (parser, TOKEN_DOT))
+    {
+      struct AST *result = AST_Create (expression->location, AST_ACCESS);
+
+      Parser_Advance (parser);
+
+      Parser_Expect (parser, TOKEN_IDENTIFIER);
+
+      result->token = parser->current;
+
+      AST_Append (result, expression);
+
+      Parser_Advance (parser);
+
+      expression = result;
+    }
+
+  return expression;
 }
 
 
@@ -739,6 +825,8 @@ Parser_Parse_Atom_Expression (struct Parser *parser)
       return Parser_Parse_Number (parser);
     case TOKEN_STRING:
       return Parser_Parse_String (parser);
+    case TOKEN_LBRACKET:
+      return Parser_Parse_Initializer (parser);
     default:
       {
         const char *b = Token_Kind_String (parser->current.kind);
@@ -863,6 +951,40 @@ Parser_Parse_String (struct Parser *parser)
   result->token = parser->current;
 
   Parser_Advance (parser);
+
+  return result;
+}
+
+
+struct AST *
+Parser_Parse_Initializer (struct Parser *parser)
+{
+  struct Location location = parser->location;
+
+  Parser_Expect_Advance (parser, TOKEN_LBRACKET);
+
+  struct AST *result;
+
+  result = AST_Create (location, AST_INITIALIZER);
+
+  while (1)
+    {
+      struct AST *expression;
+
+      expression = Parser_Parse_Statement (parser);
+
+      AST_Append (result, expression);
+
+      if (Parser_Match (parser, TOKEN_RBRACKET))
+        break;
+
+      if (!Parser_Match (parser, TOKEN_COMMA))
+        Parser_Expect (parser, TOKEN_RBRACKET);
+      else
+        Parser_Advance (parser);
+    }
+
+  Parser_Expect_Advance (parser, TOKEN_RBRACKET);
 
   return result;
 }

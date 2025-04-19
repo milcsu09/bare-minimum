@@ -292,6 +292,10 @@ Lexer_Next (struct Lexer *lexer)
       return Lexer_Advance_Token (lexer, TOKEN_LPAREN);
     case ')':
       return Lexer_Advance_Token (lexer, TOKEN_RPAREN);
+    case '[':
+      return Lexer_Advance_Token (lexer, TOKEN_LBRACKET);
+    case ']':
+      return Lexer_Advance_Token (lexer, TOKEN_RBRACKET);
     case '{':
       return Lexer_Advance_Token (lexer, TOKEN_LBRACE);
     case '}':
@@ -311,7 +315,7 @@ Lexer_Next (struct Lexer *lexer)
     case '.':
       if (Lexer_Match_Start (lexer, "..."))
         return Lexer_Advance_N_Token (lexer, 3, TOKEN_3DOT);
-      break;
+      return Lexer_Advance_Token (lexer, TOKEN_DOT);
 
     case '&':
       return Lexer_Advance_Token (lexer, TOKEN_AMPERSAND);

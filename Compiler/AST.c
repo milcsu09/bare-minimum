@@ -20,12 +20,14 @@ static const char *const AST_KIND_STRING[] = {
   "BINARY",
   "CAST",
 
+  "ACCESS",
   "COMPOUND",
   "IDENTIFIER",
   "CALL",
   "I64",
   "F64",
   "STRING",
+  "INITIALIZER",
 };
 
 
@@ -117,6 +119,8 @@ AST_Is_LV (struct AST *ast)
         default:
           return 0;
         }
+    case AST_ACCESS:
+      return 1;
     default:
       return 0;
     }
@@ -146,7 +150,7 @@ AST_Diagnostic_Base (struct AST *root, size_t depth)
       Type_Diagnostic (root->type);
     }
 
-  // fprintf (stderr, " (state %d)", root->state);
+  fprintf (stderr, " (state %d)", root->state);
   // fprintf (stderr, " at ");
   // Location_Diagnostic (root->location);
 

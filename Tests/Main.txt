@@ -1,27 +1,22 @@
 
 printf(fmt) : (*U8, ...) -> Void;
-puts(s) : (*U8) -> Void;
 
-malloc(n) : (U64) -> *Void;
-free(p) : (*Void) -> Void;
+alias [x : F64, y : F64] as Vec2;
 
 __main(argc, argv) : (I32, **U8) -> Void =
   {
+    v : Vec2 = [1.5, 2.5];
 
-    xs : **I64 = malloc(4 * 8);
+    printf("Vec2 [%g, %g]\n", v.x, v.y);
 
-    defer {
-      free(*(xs + 0));
-      free(*(xs + 1));
-      free(*(xs + 2));
-      free(*(xs + 3));
-      free(xs);
-    };
+    p := &v;
 
-    *(xs + 0) = malloc(4 * 8);
-    *(xs + 1) = malloc(4 * 8);
-    *(xs + 2) = malloc(4 * 8);
-    *(xs + 3) = malloc(4 * 8);
+    printf("*Vec2 [%g, %g]\n", *p.x, *p.y);
 
+    *p.x = 10;
+    *p.y = 20;
+
+    printf("Vec2 [%g, %g]\n", v.x, v.y);
+    printf("*Vec2 [%g, %g]\n", *p.x, *p.y);
   };
 
