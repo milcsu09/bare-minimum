@@ -524,6 +524,9 @@ Type_Castable (struct Type *t1, struct Type *t2)
   if (t1->kind == TYPE_POINTER && Type_Kind_Is_Integer (t2->kind))
     return 1;
 
+  if (Type_Kind_Is_Integer (t1->kind) && t2->kind == TYPE_POINTER)
+    return 1;
+
   if (t1->kind == TYPE_POINTER || t2->kind == TYPE_POINTER)
     return t1->kind == t2->kind;
 

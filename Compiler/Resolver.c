@@ -388,8 +388,15 @@ Resolver_Resolve_Binary (struct AST *ast, struct Scope *scope)
 
   cast = AST_Create (ast->child->next->location, AST_CAST);
 
-  if (ast->child->type->kind == TYPE_POINTER && operator != TOKEN_EQUALS)
-    cast->type = Type_Create (TYPE_I64);
+  if (ast->child->type->kind == TYPE_POINTER)
+    switch (operator)
+      {
+      case TOKEN_PLUS:
+        cast->type = Type_Create (TYPE_I64);
+        break;
+      default:
+        cast->type = Type_Copy (ast->child->type);
+      }
   else
     cast->type = Type_Copy (ast->child->type);
 
@@ -448,7 +455,8 @@ Resolver_Resolve_Access (struct AST *ast, struct Scope *scope)
 
   if (ast->child->type->kind != TYPE_STRUCTURE)
     {
-      Diagnostic (ast->location, D_ERROR, "cannot access non-structure");
+      Diagnostic (ast->location, D_ERROR, "cannot access '%s'",
+                  Type_Kind_String (ast->child->type->kind));
       Halt ();
     }
 

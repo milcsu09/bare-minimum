@@ -102,6 +102,21 @@ CG_Generate_LValue (struct CG *cg, struct AST *ast, struct Scope *scope)
         default:
           return NULL;
         }
+    case AST_BINARY:
+      switch (ast->token.kind)
+        {
+        case TOKEN_EQUALS:
+          {
+            LLVMValueRef ptr = CG_Generate_LValue (cg, ast->child, scope);
+
+            LLVMValueRef right = CG_Generate (cg, ast->child->next, scope);
+            LLVMBuildStore (cg->builder, right, ptr);
+
+            return ptr;
+          }
+        default:
+          return NULL;
+        }
     case AST_ACCESS:
       {
         LLVMValueRef s = CG_Generate_LValue (cg, ast->child, scope);
@@ -370,9 +385,9 @@ CG_Generate_Unary (struct CG *cg, struct AST *ast, struct Scope *scope)
 LLVMValueRef
 CG_Generate_Binary (struct CG *cg, struct AST *ast, struct Scope *scope)
 {
-  enum Token_Kind operator= ast->token.kind;
+  enum Token_Kind operator = ast->token.kind;
 
-  if (operator== TOKEN_EQUALS)
+  if (operator == TOKEN_EQUALS)
     {
       LLVMValueRef ptr = CG_Generate_LValue (cg, ast->child, scope);
 
@@ -564,6 +579,9 @@ CG_Generate_Cast (struct CG *cg, struct AST *ast, struct Scope *scope)
 
   if (k1 == TYPE_POINTER && Type_Kind_Is_Integer (k2))
     return LLVMBuildPtrToInt (cg->builder, value, type, "ptrtoint");
+
+  if (Type_Kind_Is_Integer (k1) && k2 == TYPE_POINTER)
+    return LLVMBuildIntToPtr (cg->builder, value, type, "intotptr");
 
   Diagnostic (ast->location, D_ERROR, "no cast defined between '%s' and '%s'",
               Type_Kind_String (k1), Type_Kind_String (k2));

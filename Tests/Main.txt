@@ -5,55 +5,47 @@ malloc(n) : (U64) -> *Void;
 calloc(n, m) : (U64, U64) -> *Void;
 free(p) : (*Void) -> Void;
 
-strcpy(d, s) : (*U8, *U8) -> *U8;
-strncpy(d, s, i) : (*U8, *U8, U64) -> *U8;
-
-alias U64 as USize;
 
 alias
   [
-    type : U64
-  ] as Token;
+    value : I64,
+    next : *Void
+  ] as Node;
 
-alias
-  [
-    current : *U8
-  ] as Lexer;
 
-lexerNext(lexer) : (*Lexer) -> Token =
+node_create(value) : (I64) -> *Node =
   {
-    token : Token;
+    node := calloc(1, 16) as *Node;
 
-    token.type = -1;
+    *node.value = value;
+    *node.next = 0 as *Void;
 
-    char := *(*lexer.current);
-
-    if char == '(' then
-      token.type = 0;
-    else if char == ')' then
-      token.type = 1;
-    else if char == '+' then
-      token.type = 2;
-    else if char == '-' then
-      token.type = 3;
-    else if char == '*' then
-      token.type = 4;
-    else if char == '/' then
-      token.type = 5;
-
-    if token.type != -1 then
-      *lexer.current = (*lexer.current) + 1;
-
-    token
+    node
   };
+
 
 __main(argc, argv) : (I32, **U8) -> Void =
   {
-    lexer : Lexer = ["(+-*/)"];
-    token : Token;
+    root := node_create(12);
+    defer free(root);
 
-    while { token = lexerNext(&lexer); token.type } != -1 then
-      printf("%d\n", token.type);
+    a := node_create(34);
+    defer free(a);
+
+    b := node_create(56);
+    defer free(b);
+
+    *a.next = b;
+
+    *root.next = a;
+
+    current := root;
+
+    while current as I64 != 0 then
+      {
+        printf("%d\n", *current.value);
+        current = *current.next;
+      };
 
   };
 

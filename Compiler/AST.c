@@ -119,6 +119,14 @@ AST_Is_LV (struct AST *ast)
         default:
           return 0;
         }
+    case AST_BINARY:
+      switch (ast->token.kind)
+        {
+        case TOKEN_EQUALS:
+          return 1;
+        default:
+          return 0;
+        }
     case AST_ACCESS:
       return 1;
     case AST_CAST:
