@@ -86,6 +86,7 @@ CG_Generate_LValue (struct CG *cg, struct AST *ast, struct Scope *scope)
           {
             Diagnostic (ast->location, D_ERROR,
                         "cannot take address of that value");
+            Diagnostic_AST (ast);
             Halt ();
           }
 
@@ -496,6 +497,7 @@ invalid:
               "unsupported '%s' operand between '%s' and '%s'",
               Token_Kind_String (operator), Type_Kind_String (k1),
               Type_Kind_String (k2));
+  Diagnostic_AST (ast);
   Halt ();
 }
 

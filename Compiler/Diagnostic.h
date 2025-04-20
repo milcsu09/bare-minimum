@@ -23,6 +23,10 @@ _Noreturn void Halt ();
 
 void Diagnostic (struct Location, const char *, const char *, ...);
 
+struct AST;
+
+void Diagnostic_AST (struct AST *);
+
 
 #endif // DIAGNOSTIC_H
 

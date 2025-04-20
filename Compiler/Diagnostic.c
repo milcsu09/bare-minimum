@@ -1,3 +1,4 @@
+#include "AST.h"
 #include "Diagnostic.h"
 #include <stdarg.h>
 #include <stdio.h>
@@ -27,6 +28,18 @@ Diagnostic (struct Location location, const char *type, const char *fmt, ...)
   va_start (args, fmt);
   vfprintf (stderr, fmt, args);
   va_end (args);
+
+  fprintf (stderr, "\n");
+}
+
+void
+Diagnostic_AST (struct AST *ast)
+{
+  Location_Diagnostic (ast->location);
+
+  fprintf (stderr, ": %s: ", D_NOTE);
+
+  AST_Dump (ast);
 
   fprintf (stderr, "\n");
 }

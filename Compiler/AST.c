@@ -414,6 +414,7 @@ AST_Dump_Base (struct AST *root, size_t depth)
           {
           case AST_BINARY:
           case AST_SIZEOF:
+          case AST_CAST:
             need_paren = 1;
             break;
           default:
@@ -441,8 +442,11 @@ AST_Dump_Base (struct AST *root, size_t depth)
     case AST_COMPOUND:
       {
         fprintf (stderr, "\n");
+
         AST_Dump_Indent (depth + 1);
+
         fprintf (stderr, "{\n");
+
         struct AST *current = root->child;
         while (current)
           {
@@ -456,6 +460,7 @@ AST_Dump_Base (struct AST *root, size_t depth)
             if (current)
               fprintf (stderr, "\n");
           }
+
         AST_Dump_Indent (depth + 1);
         fprintf (stderr, "}");
       }

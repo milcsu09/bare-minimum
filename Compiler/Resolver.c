@@ -158,6 +158,7 @@ Resolver_Resolve_Prototype (struct AST *ast, struct Scope *scope)
         {
           Diagnostic (ast->location, D_ERROR,
                       "too many arguments compared to function-prototype");
+          Diagnostic_AST (ast);
           Halt ();
         }
 
@@ -165,6 +166,7 @@ Resolver_Resolve_Prototype (struct AST *ast, struct Scope *scope)
         {
           Diagnostic (ast->location, D_ERROR,
                       "not enough arguments compared to function-prototype");
+          Diagnostic_AST (ast);
           Halt ();
         }
     }
@@ -179,6 +181,7 @@ Resolver_Resolve_Prototype (struct AST *ast, struct Scope *scope)
         {
           Diagnostic (ast->child->location, D_ERROR,
                       "prototypes of '%s' are not matching", name);
+          Diagnostic_AST (ast);
           Halt ();
         }
     }
@@ -220,9 +223,6 @@ Resolver_Resolve_Function (struct AST *ast, struct Scope *scope)
       ++i, current = current->next;
     }
 
-  // Resolve body.
-  Resolver_Resolve (ast->child->next, child);
-
   // Cast body to function's return type.
   if (function.out->kind != TYPE_VOID)
     {
@@ -238,6 +238,9 @@ Resolver_Resolve_Function (struct AST *ast, struct Scope *scope)
     }
 
   ast->type = Type_Copy (ast->child->type);
+
+  // Resolve body.
+  Resolver_Resolve (ast->child->next, child);
 
   Scope_Destroy_Type (child);
 }
@@ -302,6 +305,7 @@ Resolver_Resolve_Variable (struct AST *ast, struct Scope *scope)
     {
       Diagnostic (ast->location, D_ERROR, "redefinition of identifier '%s'",
                   name);
+      Diagnostic_AST (ast);
       Halt ();
     }
 
@@ -440,6 +444,9 @@ Resolver_Resolve_Cast (struct AST *ast, struct Scope *scope)
   if (ast->type->kind == TYPE_STRUCTURE && ast->child->kind == AST_INITIALIZER)
     AST_Switch_Type (ast->child, Type_Copy (ast->type));
 
+  if (ast->child->kind == AST_COMPOUND)
+    AST_Switch_Type (ast->child, Type_Copy (ast->type));
+
   Resolver_Resolve (ast->child, scope);
 }
 
@@ -449,16 +456,20 @@ Resolver_Resolve_Access (struct AST *ast, struct Scope *scope)
 {
   Resolver_Resolve (ast->child, scope);
 
-  if (!AST_Is_LV (ast->child))
-    {
-      Diagnostic (ast->location, D_ERROR, "cannot access right-value");
-      Halt ();
-    }
-
   if (ast->child->type->kind != TYPE_STRUCTURE)
     {
       Diagnostic (ast->location, D_ERROR, "cannot access '%s'",
                   Type_Kind_String (ast->child->type->kind));
+      Diagnostic_AST (ast);
+      Diagnostic_AST (ast->child);
+      Halt ();
+    }
+
+  if (!AST_Is_LV (ast->child))
+    {
+      Diagnostic (ast->location, D_ERROR, "cannot access right-value");
+      Diagnostic_AST (ast);
+      Diagnostic_AST (ast->child);
       Halt ();
     }
 
@@ -481,6 +492,7 @@ Resolver_Resolve_Access (struct AST *ast, struct Scope *scope)
     {
       Diagnostic (ast->token.location, D_ERROR,
                   "undefined structure field '%s'", name);
+      Diagnostic_AST (ast);
       Halt ();
     }
 }
@@ -489,11 +501,36 @@ Resolver_Resolve_Access (struct AST *ast, struct Scope *scope)
 void
 Resolver_Resolve_Compound (struct AST *ast, struct Scope *scope)
 {
+  // When non-void block, and casted to a type, change last value to cast.
+  if (ast->state == 0 && ast->type != NULL)
+    {
+      struct AST *current = ast->child;
+      struct AST *last = ast;
+
+      while (current->next)
+        {
+          last = current;
+          current = current->next;
+        }
+
+      struct AST *cast = AST_Create (current->location, AST_CAST);
+      cast->type = Type_Copy (ast->type);
+
+      if (last == ast)
+        {
+          AST_Append (cast, ast->child);
+          ast->child = cast;
+        }
+      else
+        {
+          AST_Append (cast, last->next);
+          last->next = cast;
+        }
+    }
+
   struct Scope *child;
 
   child = Scope_Create (scope);
-
-  // ast->scope = child;
 
   struct AST *current = ast->child;
 
@@ -548,6 +585,7 @@ Resolver_Resolve_Call (struct AST *ast, struct Scope *scope)
     {
       Diagnostic (ast->location, D_ERROR, "call to '%s' type",
                   Type_Kind_String (ast->child->type->kind));
+      Diagnostic_AST (ast);
       Halt ();
     }
 
@@ -584,6 +622,7 @@ Resolver_Resolve_Call (struct AST *ast, struct Scope *scope)
       else
         {
           Diagnostic (ast->location, D_ERROR, "too many arguments supplied");
+          Diagnostic_AST (ast);
           Halt ();
         }
 
@@ -606,6 +645,7 @@ Resolver_Resolve_Call (struct AST *ast, struct Scope *scope)
   if (i < function.in_n)
     {
       Diagnostic (ast->location, D_ERROR, "not enough arguments supplied");
+      Diagnostic_AST (ast);
       Halt ();
     }
 
@@ -685,6 +725,7 @@ Resolver_Resolve_Initializer (struct AST *ast, struct Scope *scope)
             {
               Diagnostic (current->location, D_ERROR,
                           "too many initalizer-fields supplied");
+              Diagnostic_AST (current);
               Halt ();
             }
 
@@ -708,6 +749,7 @@ Resolver_Resolve_Initializer (struct AST *ast, struct Scope *scope)
         {
           Diagnostic (ast->location, D_ERROR,
                       "not enough initalizer-fields supplied");
+          Diagnostic_AST (ast);
           Halt ();
         }
 

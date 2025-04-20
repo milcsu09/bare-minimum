@@ -64,7 +64,7 @@ Checker_Check_Prototype (struct AST *ast)
     {
       Diagnostic (ast->location, D_ERROR, "function cannot be of type '%s'",
                   Type_Kind_String (ast->type->kind));
-      Diagnostic (ast->location, D_NOTE, "use the syntax '(T1, ...) -> T'");
+      Diagnostic_AST (ast);
       Halt ();
     }
 
@@ -97,6 +97,8 @@ Checker_Check_Variable (struct AST *ast)
     case TYPE_FUNCTION:
       Diagnostic (ast->location, D_ERROR, "variable cannot be of type '%s'",
                   Type_Kind_String (ast->type->kind));
+      Diagnostic_AST (ast);
+      Diagnostic_AST (ast->child);
       Halt ();
     default:
       break;
@@ -138,6 +140,8 @@ Checker_Check_Unary (struct AST *ast)
         {
           Diagnostic (ast->child->location, D_ERROR,
                       "cannot take address of right-value");
+          Diagnostic_AST (ast);
+          Diagnostic_AST (ast->child);
           Halt ();
         }
       break;
@@ -159,6 +163,8 @@ Checker_Check_Binary (struct AST *ast)
         {
           Diagnostic (ast->child->location, D_ERROR,
                       "cannot assign right-value to right-value");
+          Diagnostic_AST (ast);
+          Diagnostic_AST (ast->child);
           Halt ();
         }
       break;
@@ -183,6 +189,7 @@ Checker_Check_Cast (struct AST *ast)
       Diagnostic (ast->child->location, D_ERROR, "cannot cast '%s' to '%s'",
                   Type_Kind_String (type->kind),
                   Type_Kind_String (ast->type->kind));
+      Diagnostic_AST (ast);
       Halt ();
     }
 
@@ -236,23 +243,12 @@ Checker_Check_Call (struct AST *ast)
           Diagnostic (current->location, D_ERROR,
                       "'%s' as function parameter",
                       Type_Kind_String (type->kind));
+          Diagnostic_AST (ast);
+          Diagnostic_AST (current);
           Halt ();
         default:
           break;
         }
-
-      switch (type->kind)
-        {
-        case TYPE_STRUCTURE:
-        case TYPE_INITIALIZER:
-          Diagnostic (current->location, D_WARNING,
-                      "'%s' as function parameter",
-                      Type_Kind_String (type->kind));
-          break;
-        default:
-          break;
-        }
-
 
       current = current->next;
     }
@@ -289,6 +285,7 @@ Checker_Check_Initializer (struct AST *ast)
     {
       Diagnostic (ast->location, D_ERROR,
                   "cannot infer type of initializer-list");
+      Diagnostic_AST (ast);
       Halt ();
     }
 
@@ -310,7 +307,7 @@ Checker_Check_Sizeof (struct AST *ast)
   switch (ast->type->kind)
     {
     case TYPE_VOID:
-      Diagnostic (ast->location, D_WARNING, "size-of 'Void'?");
+      Diagnostic (ast->location, D_WARNING, "sizeof Void?");
       break;
     default:
       break;

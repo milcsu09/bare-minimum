@@ -88,10 +88,10 @@ main (void)
   // AST_Diagnostic (ast);
   // fprintf (stderr, "----------------\n");
 
-  fprintf (stderr, "----------------\n");
-  AST_Diagnostic (ast);
-  AST_Dump (ast);
-  fprintf (stderr, "----------------\n");
+  // AST_Diagnostic (ast);
+  // fprintf (stderr, "----------------\n");
+  // AST_Dump (ast);
+  // fprintf (stderr, "----------------\n");
 
   Checker_Check (ast);
 
