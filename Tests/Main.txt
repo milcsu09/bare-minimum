@@ -1,20 +1,20 @@
 
 printf(fmt) : (*U8, ...) -> Void;
 
-alias
-  [
-    x : F64,
-    y : F64
-  ] as Vec2;
-
-vec2_create(x, y) : (F64, F64) -> Vec2 =
-  {
-    [x, y] # Auto cast to Vec2
-  };
-
 __main(argc, argv) : (I32, **U8) -> Void =
   {
-    v := vec2_create (10, 20);
-    printf("%f, %f\n", v.x, v.y);
+    x := 5;
+
+    printf (" x = %d\n", x);
+
+    p := &x;
+
+    printf (" p = %p\n", p);
+    printf ("*p = %d\n", *p);
+
+    *p = 10;
+
+    printf (" x = %d\n",  x);
+    printf ("*p = %d\n", *p);
   };
 

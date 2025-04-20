@@ -8,14 +8,14 @@
 #include <string.h>
 
 struct CG *
-CG_Create ()
+CG_Create (const char *name)
 {
   struct CG *cg;
 
   cg = calloc (1, sizeof (struct CG));
 
   cg->context = LLVMContextCreate ();
-  cg->module = LLVMModuleCreateWithNameInContext ("Main", cg->context);
+  cg->module = LLVMModuleCreateWithNameInContext (name, cg->context);
   cg->builder = LLVMCreateBuilderInContext (cg->context);
 
   cg->pass = LLVMCreateFunctionPassManagerForModule (cg->module);

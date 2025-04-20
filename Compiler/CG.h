@@ -16,7 +16,7 @@ struct CG
 };
 
 
-struct CG *CG_Create ();
+struct CG *CG_Create (const char *);
 
 void CG_Destroy (struct CG *);
 

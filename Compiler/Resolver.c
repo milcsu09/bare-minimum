@@ -658,21 +658,21 @@ void
 Resolver_Resolve_I64 (struct AST *ast, struct Scope *scope)
 {
   (void)scope;
-  ast->type = Type_Create (TYPE_I64);
+  AST_Switch_Type (ast, Type_Create (TYPE_I64));
 }
 
 void
 Resolver_Resolve_F64 (struct AST *ast, struct Scope *scope)
 {
   (void)scope;
-  ast->type = Type_Create (TYPE_F64);
+  AST_Switch_Type (ast, Type_Create (TYPE_F64));
 }
 
 void
 Resolver_Resolve_String (struct AST *ast, struct Scope *scope)
 {
   (void)scope;
-  ast->type = Type_Create_Pointer (Type_Create (TYPE_U8));
+  AST_Switch_Type (ast, Type_Create_Pointer (Type_Create (TYPE_U8)));
 }
 
 void

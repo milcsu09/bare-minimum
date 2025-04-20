@@ -95,6 +95,7 @@ AST_Append (struct AST *root, struct AST *node)
     AST_Attach (root->child, node);
 }
 
+
 void
 AST_Switch_Type (struct AST *ast, struct Type *type)
 {
