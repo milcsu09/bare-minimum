@@ -572,15 +572,15 @@ Resolver_Resolve_Identifier (struct AST *ast, struct Scope *scope)
 
   symbol = Scope_Find (scope, name);
 
-  if (symbol->raw_type != 0)
-    {
-      Diagnostic (ast->location, D_ERROR, "expected non-type variable", name);
-      Halt ();
-    }
-
   if (!symbol)
     {
       Diagnostic (ast->location, D_ERROR, "undefined identifier '%s'", name);
+      Halt ();
+    }
+
+  if (symbol->raw_type != 0)
+    {
+      Diagnostic (ast->location, D_ERROR, "expected non-type variable", name);
       Halt ();
     }
 

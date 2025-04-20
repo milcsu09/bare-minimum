@@ -1,14 +1,87 @@
 
 printf(fmt) : (*U8, ...) -> Void;
 
+malloc(n) : (U64) -> *Void;
+free(x) : (*Void) -> Void;
+
 alias I64 as i64;
 
-alias [x : F64, y : F64] as vec2;
+alias
+  [
+    data : *I64,
+    pointer : I64
+  ] as stack_t;
 
-alias F64 as float;
+stack_push(stack, value) : (*stack_t, I64) -> Void =
+  {
+    *(*stack.data + *stack.pointer) = value;
+    *stack.pointer = *stack.pointer + 1;
+  };
+
+stack_pop(stack) : (*stack_t) -> I64 =
+  {
+    *stack.pointer = *stack.pointer - 1;
+    *(*stack.data + *stack.pointer)
+  };
+
+stack_evaluate(stack, code) : (*stack_t, *U8) -> Void =
+  {
+    running := 1;
+    ip := 0;
+
+    while running then
+      {
+        instruction := code + ip;
+        operation := *(instruction + 0);
+        operand   := *(instruction + 1);
+
+        if operation == 0 then
+          stack_push(stack, operand);
+
+        if operation == 1 then
+          {
+            b := stack_pop(stack);
+            a := stack_pop(stack);
+            stack_push(stack, a + b);
+          };
+
+        if operation == 2 then
+          {
+            a := stack_pop(stack);
+            printf("%ld\n", a);
+          };
+
+        if operation == 3 then
+          running = 0;
+
+        ip = ip + 2;
+      };
+
+  };
 
 __main(argc, argv) : (I32, **U8) -> Void =
   {
-    float = 5; # Tests/Main.txt:12:5: Error: expected non-type variable
+    stack : stack_t = [malloc(64 * sizeof I64), 0];
+    defer free(stack.data);
+
+    code : *U8 = malloc (64 * sizeof I64);
+    defer free(code);
+
+    *(code + 0) = 0;  # PUSH
+    *(code + 1) = 34; # 34
+
+    *(code + 2) = 0;  # PUSH
+    *(code + 3) = 35; # 35
+
+    *(code + 4) = 1;  # ADD
+    *(code + 5) = 0;  # -
+
+    *(code + 6) = 2;  # PRINT
+    *(code + 7) = 0;  # -
+
+    *(code + 8) = 3;  # HALT
+    *(code + 9) = 0;  # -
+
+    stack_evaluate(&stack, code);
   };
 
