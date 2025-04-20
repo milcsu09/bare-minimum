@@ -82,7 +82,7 @@ Change_Extension (const char *org, const char *new_ext)
 void
 Main_Scope_Add_Type (struct Scope *scope, char *name, struct Type *type)
 {
-  Scope_Add (scope, Symbol_Create_Type (name, type));
+  Scope_Add (scope, Symbol_Create_Type (name, type, 1));
   Type_Destroy (type);
 }
 

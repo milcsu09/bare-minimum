@@ -8,6 +8,7 @@
 struct Symbol
 {
   char *name;
+  int raw_type; // Is this symbol a raw-type? (I64, Void, etc.)
   union
   {
     struct Type *type;
@@ -16,7 +17,7 @@ struct Symbol
 };
 
 
-struct Symbol *Symbol_Create_Type (const char *, struct Type *);
+struct Symbol *Symbol_Create_Type (const char *, struct Type *, int);
 
 struct Symbol *Symbol_Create_Value (const char *, LLVMValueRef);
 

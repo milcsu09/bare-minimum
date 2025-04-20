@@ -18,6 +18,12 @@ Resolver_Resolve_Type (struct Type *type, struct Scope *scope)
 
         symbol = Scope_Find (scope, name);
 
+        if (symbol->raw_type != 1)
+          {
+            Diagnostic (token.location, D_ERROR, "expected raw-type");
+            Halt ();
+          }
+
         if (symbol == NULL)
           {
             Diagnostic (token.location, D_ERROR, "undefined type '%s'", name);
@@ -186,7 +192,7 @@ Resolver_Resolve_Prototype (struct AST *ast, struct Scope *scope)
         }
     }
   else
-    Scope_Add (scope, Symbol_Create_Type (name, ast->type));
+    Scope_Add (scope, Symbol_Create_Type (name, ast->type, 0));
 }
 
 void
@@ -218,7 +224,7 @@ Resolver_Resolve_Function (struct AST *ast, struct Scope *scope)
       // Get prototype's arguments' type.
       struct Type *type = function.in[i];
 
-      Scope_Add (child, Symbol_Create_Type (name, type));
+      Scope_Add (child, Symbol_Create_Type (name, type, 0));
 
       ++i, current = current->next;
     }
@@ -245,6 +251,7 @@ Resolver_Resolve_Function (struct AST *ast, struct Scope *scope)
   Scope_Destroy_Type (child);
 }
 
+
 void
 Resolver_Resolve_Alias (struct AST *ast, struct Scope *scope)
 {
@@ -253,7 +260,7 @@ Resolver_Resolve_Alias (struct AST *ast, struct Scope *scope)
 
   AST_Switch_Type (ast, type);
 
-  Scope_Add (scope, Symbol_Create_Type (name, type));
+  Scope_Add (scope, Symbol_Create_Type (name, type, 1));
 }
 
 
@@ -309,7 +316,7 @@ Resolver_Resolve_Variable (struct AST *ast, struct Scope *scope)
       Halt ();
     }
 
-  Scope_Add (scope, Symbol_Create_Type (name, ast->type));
+  Scope_Add (scope, Symbol_Create_Type (name, ast->type, 0));
 }
 
 void
@@ -564,6 +571,12 @@ Resolver_Resolve_Identifier (struct AST *ast, struct Scope *scope)
   struct Symbol *symbol;
 
   symbol = Scope_Find (scope, name);
+
+  if (symbol->raw_type != 0)
+    {
+      Diagnostic (ast->location, D_ERROR, "expected non-type variable", name);
+      Halt ();
+    }
 
   if (!symbol)
     {

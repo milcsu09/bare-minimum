@@ -3,10 +3,12 @@ printf(fmt) : (*U8, ...) -> Void;
 
 alias I64 as i64;
 
+alias [x : F64, y : F64] as vec2;
+
+alias F64 as float;
+
 __main(argc, argv) : (I32, **U8) -> Void =
   {
-
-    MyValue : i64 = 5;
-
+    float = 5; # Tests/Main.txt:12:5: Error: expected non-type variable
   };
 

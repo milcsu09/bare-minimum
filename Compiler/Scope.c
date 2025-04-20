@@ -20,13 +20,14 @@ Symbol_Create (const char *name)
 
 
 struct Symbol *
-Symbol_Create_Type (const char *name, struct Type *type)
+Symbol_Create_Type (const char *name, struct Type *type, int raw_type)
 {
   struct Symbol *symbol;
 
   symbol = Symbol_Create (name);
 
   symbol->type = Type_Copy (type);
+  symbol->raw_type = raw_type;
 
   return symbol;
 }
