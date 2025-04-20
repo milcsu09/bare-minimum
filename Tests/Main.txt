@@ -1,20 +1,103 @@
 
 printf(fmt) : (*U8, ...) -> Void;
 
+calloc(n, m) : (U64, U64) -> *Void;
+free(p) : (*Void) -> Void;
+
+alias U64 as AST_Kind;
+
+alias
+  [
+    value : I64,
+    kind : AST_Kind,
+    child : *Void,
+    next : *Void
+  ] as AST;
+
+ast_create(kind) : (AST_Kind) -> *AST =
+  {
+    ast : *AST;
+
+    ast = calloc(1, sizeof AST);
+
+    *ast.kind = kind;
+
+    ast
+  };
+
+ast_attach(root, node) : (*AST, *AST) -> Void =
+  {
+    current := root;
+
+    while *current.next as I64 != 0 then
+      {
+        current = *current.next;
+      };
+
+    *current.next = node;
+  };
+
+ast_append(root, node) : (*AST, *AST) -> Void =
+  {
+    if *root.child as I64 == 0 then
+      *root.child = node;
+    else
+      ast_attach(*root.child, node);
+  };
+
+ast_destroy(root) : (*AST) -> Void =
+  {
+    if *root.child as I64 != 0 then
+      ast_destroy(*root.child);
+
+    if *root.next as I64 != 0 then
+      ast_destroy(*root.next);
+
+    free (root);
+  };
+
+ast_diagnostic(root, depth) : (*AST, I64) -> Void =
+  {
+    i := depth * 4;
+    while i > 0 then
+      {
+        printf(" ");
+        i = i - 1;
+      };
+
+    printf("NODE-%d\n", *root.kind);
+
+    if *root.child as I64 != 0 then
+      ast_diagnostic(*root.child, depth + 1);
+
+    if *root.next as I64 != 0 then
+      ast_diagnostic(*root.next, depth);
+  };
+
 __main(argc, argv) : (I32, **U8) -> Void =
   {
-    x := 5;
+    root := ast_create(0);
+    defer ast_destroy(root);
 
-    printf (" x = %d\n", x);
+    a := ast_create(1);
 
-    p := &x;
+    a_a := ast_create(3);
+    a_b := ast_create(4);
 
-    printf (" p = %p\n", p);
-    printf ("*p = %d\n", *p);
+    ast_append(a, a_a);
+    ast_append(a, a_b);
 
-    *p = 10;
+    b := ast_create(2);
 
-    printf (" x = %d\n",  x);
-    printf ("*p = %d\n", *p);
+    b_a := ast_create(5);
+    b_b := ast_create(6);
+
+    ast_append(b, b_a);
+    ast_append(b, b_b);
+
+    ast_append(root, a);
+    ast_append(root, b);
+
+    ast_diagnostic(root, 0);
   };
 

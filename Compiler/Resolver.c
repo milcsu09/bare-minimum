@@ -599,8 +599,6 @@ Resolver_Resolve_Call (struct AST *ast, struct Scope *scope)
     {
       struct AST *next = current->next;
 
-      Resolver_Resolve (current, scope);
-
       struct AST *cast = NULL;
 
       if (i < function.in_n)
@@ -611,8 +609,6 @@ Resolver_Resolve_Call (struct AST *ast, struct Scope *scope)
           cast->type = Type_Copy (type);
           cast->child = current;
           cast->next = NULL;
-
-          Resolver_Resolve (cast, scope);
         }
       else if (function.variadic)
         {
@@ -625,6 +621,8 @@ Resolver_Resolve_Call (struct AST *ast, struct Scope *scope)
           Diagnostic_AST (ast);
           Halt ();
         }
+
+      Resolver_Resolve (cast, scope);
 
       current->next = NULL;
 
