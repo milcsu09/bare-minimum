@@ -75,11 +75,11 @@ Parser_Parse_Type_Primary (struct Parser *parser)
 
   switch (token.kind)
     {
-    case TOKEN_TYPE:
+    case TOKEN_IDENTIFIER:
       Parser_Advance (parser);
       return Type_Create_Dummy (token);
     default:
-      Parser_Diagnostic_Expect (parser, TOKEN_TYPE);
+      Parser_Diagnostic_Expect (parser, TOKEN_IDENTIFIER);
       Halt ();
     }
 }
@@ -452,7 +452,7 @@ Parser_Parse_Alias_Statement (struct Parser *parser)
 
       Parser_Expect_Advance (parser, TOKEN_AS);
 
-      Parser_Expect (parser, TOKEN_TYPE);
+      Parser_Expect (parser, TOKEN_IDENTIFIER);
 
       struct Token name = parser->current;
 

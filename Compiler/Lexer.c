@@ -218,10 +218,7 @@ Lexer_Lex_Identifier (struct Lexer *lexer)
 
   char *s = String_Copy_N (start, length);
 
-  if (isupper (s[0]))
-    return Token_Create_S (location, TOKEN_TYPE, s);
-  else
-    return Token_Create_S (location, TOKEN_IDENTIFIER, s);
+  return Token_Create_S (location, TOKEN_IDENTIFIER, s);
 }
 
 

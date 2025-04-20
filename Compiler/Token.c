@@ -12,7 +12,7 @@ static const char *const TOKEN_KIND_STRING[] = {
   "String",
 
   "Identifier",
-  "Type",
+  // "Type",
 
   "then",
   "if",
@@ -118,7 +118,7 @@ Token_Copy (struct Token token)
     {
     case TOKEN_STRING:
     case TOKEN_IDENTIFIER:
-    case TOKEN_TYPE:
+    // case TOKEN_TYPE:
       copy.value.s = String_Copy (token.value.s);
       break;
     default:
@@ -136,7 +136,7 @@ Token_Destroy (struct Token token)
     {
     case TOKEN_STRING:
     case TOKEN_IDENTIFIER:
-    case TOKEN_TYPE:
+    // case TOKEN_TYPE:
       free (token.value.s);
       break;
     default:
@@ -162,9 +162,9 @@ Token_Diagnostic (struct Token token)
     case TOKEN_IDENTIFIER:
       fprintf (stderr, "identifier '%s'", token.value.s);
       break;
-    case TOKEN_TYPE:
-      fprintf (stderr, "type '%s'", token.value.s);
-      break;
+    // case TOKEN_TYPE:
+    //   fprintf (stderr, "type '%s'", token.value.s);
+    //   break;
     default:
       fprintf (stderr, "%s", Token_Kind_String (token.kind));
       break;

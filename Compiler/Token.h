@@ -22,7 +22,7 @@ enum Token_Kind
   TOKEN_STRING,
 
   TOKEN_IDENTIFIER,
-  TOKEN_TYPE,
+  // TOKEN_TYPE,
 
   TOKEN_THEN,
   TOKEN_IF,
